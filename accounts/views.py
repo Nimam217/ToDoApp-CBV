@@ -5,12 +5,21 @@ from django.views.generic import CreateView, TemplateView, DetailView, UpdateVie
 from django.contrib.auth.views import LoginView, PasswordResetView, PasswordResetConfirmView, PasswordChangeView
 from django.urls import reverse_lazy, reverse
 from .models import Profile
+from django.contrib.auth import login
 # Create your views here.
 
 class RegisterView(CreateView):
     template_name = 'registration/register.html'
     form_class = CustomUserCreationForm
-    success_url = reverse_lazy('accounts:login')
+    success_url = reverse_lazy('core:home')
+    def form_valid(self, form):
+        to_return = super().form_valid(form)
+        messages.success(self.request, "Registration successful")
+
+        login(self.request, self.object)
+        return to_return
+
+
 
 class CustomLoginView(LoginView):
     template_name = "registration/login.html"
@@ -26,7 +35,7 @@ class LogoutConfirmView(TemplateView):
 
 
 
-class CustomPasswordResetView(LoginRequiredMixin,PasswordResetView):
+class CustomPasswordResetView(PasswordResetView):
     template_name = "registration/password_reset.html"
     email_template_name = "registration/password_reset_email.html"
     success_url = reverse_lazy(
@@ -34,7 +43,7 @@ class CustomPasswordResetView(LoginRequiredMixin,PasswordResetView):
     )
 
 
-class CustomPasswordResetConfirmView(LoginRequiredMixin,PasswordResetConfirmView):
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     success_url = reverse_lazy(
         "accounts:password_reset_complete"
     )

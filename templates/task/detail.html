@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Task Details{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-md-8 col-lg-6">
+
+        <div class="card border-0 shadow-sm">
+
+            <div class="card-body p-4">
+
+                <!-- Status -->
+
+                <div class="mb-3">
+
+                    {% if task.done %}
+
+                        <span class="badge text-bg-success">
+                            Completed
+                        </span>
+
+                    {% else %}
+
+                        <span class="badge text-bg-warning">
+                            Pending
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- Title -->
+
+                <h2 class="fw-bold">
+                    {{ task.title }}
+                </h2>
+
+
+                <!-- Description -->
+
+                <div class="mt-4">
+
+                    <h6 class="fw-bold">
+                        Description
+                    </h6>
+
+                    <p class="text-muted">
+                        {{ task.description|default:"No description." }}
+                    </p>
+
+                </div>
+
+
+                <hr>
+
+
+                <!-- Dates -->
+
+                <div class="small text-muted">
+
+                    <p class="mb-1">
+                        Created:
+                        {{ task.created_at|date:"F d, Y H:i" }}
+                    </p>
+
+                    <p class="mb-0">
+                        Last updated:
+                        {{ task.updated_at|date:"F d, Y H:i" }}
+                    </p>
+
+                </div>
+
+
+                <!-- Actions -->
+
+                <div class="d-flex gap-2 mt-4">
+
+                    <a
+                        href="{% url 'task:update' task.pk %}"
+                        class="btn btn-primary flex-grow-1"
+                    >
+                        Edit
+                    </a>
+
+                    <a
+                        href="{% url 'task:delete' task.pk %}"
+                        class="btn btn-outline-danger"
+                    >
+                        Delete
+                    </a>
+
+                    <a
+                        href="{% url 'task:dashboard' %}"
+                        class="btn btn-outline-secondary"
+                    >
+                        Back
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
