@@ -23,6 +23,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls"),name="accounts"),
     path("",include("core.urls"),),
     path("task/",include("task.urls"),name="task"),
+    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
 
 ]
 
