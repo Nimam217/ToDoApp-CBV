@@ -43,7 +43,11 @@ INSTALLED_APPS = [
     'task',
     'core',
     "rest_framework",
-    "django_filters"
+    'rest_framework.authtoken',
+    "django_filters",
+    'drf_yasg',
+    'rest_framework_simplejwt',
+    "mail_templated",
 
 ]
 
@@ -144,4 +148,19 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 # set email for develop
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp4dev'  # SMTP server host
+EMAIL_PORT = 25  # SMTP server port (587 for TLS, 465 for SSL)
+EMAIL_HOST_USER = ''  # SMTP server username
+EMAIL_HOST_PASSWORD = ''  # SMTP server password
+EMAIL_USE_TLS = False
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        "rest_framework.authentication.TokenAuthentication",
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ]
+}

@@ -1,11 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect
+
 from .forms import CustomUserCreationForm,CustomAuthenticationForm,ProfileForm
 from django.views.generic import CreateView, TemplateView, DetailView, UpdateView
 from django.contrib.auth.views import LoginView, PasswordResetView, PasswordResetConfirmView, PasswordChangeView
 from django.urls import reverse_lazy, reverse
 from .models import Profile
 from django.contrib.auth import login
+from .mixins import VerifiedRequiredMixin
 # Create your views here.
 
 class RegisterView(CreateView):
@@ -51,15 +54,24 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 
 
 
-class ProfileView(LoginRequiredMixin,DetailView):
+class ProfileView(LoginRequiredMixin,VerifiedRequiredMixin,DetailView):
     template_name = "accounts/profile.html"
     model = Profile
     context_object_name = "profile"
-
     def get_queryset(self):
         return Profile.objects.filter(
             user=self.request.user
         )
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_verified:
+            messages.error(
+                request,
+                "You are not verified"
+            )
+            return redirect("core:home")
+
+        return super().dispatch(request, *args, **kwargs)
 
 
 class ProfileUpdateView(LoginRequiredMixin,UpdateView):

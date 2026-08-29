@@ -82,4 +82,10 @@ path(
     ProfileUpdateView.as_view(),
     name="profile_edit",
 ),
+
+
+    path(
+        'api/v1/',
+        include('accounts.api.v1.urls',namespace="accounts-api-v1")
+    ),
 ]
