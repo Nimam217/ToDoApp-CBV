@@ -1,4 +1,4 @@
-'''import pytest
+import pytest
 
 from django.core.exceptions import ValidationError
 
@@ -79,4 +79,4 @@ class TestTaskModel:
         )
 
         with pytest.raises(ValidationError):
-            task.full_clean()'''
+            task.full_clean()

@@ -1,4 +1,4 @@
-'''import jwt
+import jwt
 import pytest
 from django.conf import settings
 from django.urls import reverse
@@ -535,4 +535,4 @@ class TestResendActivationEmail:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "email" in response.data'''
+        assert "email" in response.data
