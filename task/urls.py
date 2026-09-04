@@ -23,6 +23,12 @@ urlpatterns = [
         name='update'
     ),
     path(
+        "delete/<int:pk>/",
+        TaskDeleteView.as_view(),
+        name='delete'
+
+    ),
+    path(
         "api/v1/",
         include(
             ("task.api.v1.urls", "task_api_v1"),

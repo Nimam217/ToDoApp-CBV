@@ -8,3 +8,6 @@ psycopg2-binary
 djangorestframework
 django-filter
 markdown
+drf-yasg
+djangorestframework-simplejwt
+django-mail-templated

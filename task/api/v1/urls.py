@@ -8,6 +8,6 @@ app_name = "task_api_v1"
 
 
 router = routers.DefaultRouter()
-router.register('',TaskModelViewSet,basename='task-api')
+router.register('my-task',TaskModelViewSet,basename='task-api')
 
 urlpatterns = router.urls
