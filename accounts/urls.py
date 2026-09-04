@@ -7,7 +7,7 @@ from .views import (
     CustomPasswordResetView,
     CustomLoginView, CustomPasswordResetConfirmView, ProfileView,
     ProfileUpdateView,
-    PasswordChangeConfirmView, PasswordChangeView
+    PasswordChangeConfirmView, PasswordChangeView, ResendActivationEmailView, ActivationConfirmView
 )
 
 app_name = "accounts"
@@ -82,7 +82,16 @@ path(
     ProfileUpdateView.as_view(),
     name="profile_edit",
 ),
-
+path(
+    "resend_activation/",
+    ResendActivationEmailView.as_view(),
+    name="resend_activation",
+),
+path(
+    "activation/<str:token>/",
+    ActivationConfirmView.as_view(),
+    name="activation_confirm",
+),
 
     path(
         'api/v1/',

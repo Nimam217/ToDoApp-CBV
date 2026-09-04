@@ -7,17 +7,29 @@ from django.contrib.auth.views import (
     PasswordResetView,
 )
 from django.urls import reverse, reverse_lazy
-from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
+from django.views.generic import CreateView, DetailView, TemplateView, UpdateView,FormView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .forms import (
     CustomAuthenticationForm,
     CustomUserCreationForm,
     ProfileForm,
+    ResendActivationEmailForm
 )
-from .mixins import VerifiedRequiredMixin
-from .models import Profile
-from .services import send_activation_email
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.shortcuts import render
 
+
+
+
+User = get_user_model()
+
+from .mixins import VerifiedRequiredMixin
+from .models import Profile,User
+from .services import send_activation_email, send_web_activation_email
+import jwt
 
 class RegisterView(CreateView):
     template_name = "registration/register.html"
@@ -120,3 +132,65 @@ class PasswordChangeConfirmView(
     TemplateView,
 ):
     template_name = "registration/password_change_done.html"
+
+
+class ResendActivationEmailView(FormView):
+    template_name = "registration/resend_activation.html"
+    form_class = ResendActivationEmailForm
+    success_url = reverse_lazy("accounts:login")
+
+    def form_valid(self, form):
+        user = User.objects.filter(
+            email=form.cleaned_data["email"]
+        ).first()
+
+        if user and not user.is_verified:
+            refresh = RefreshToken.for_user(user)
+            token = str(refresh.access_token)
+            send_web_activation_email(user,token)
+
+        messages.success(
+            self.request,
+            "If the account exists and is not verified, an activation email has been sent.",
+        )
+
+        return super().form_valid(form)
+
+
+class ActivationConfirmView(TemplateView):
+    template_name = "registration/activation_confirm.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        token = self.kwargs["token"]
+
+        try:
+            decoded_token = jwt.decode(
+                token,
+                settings.SECRET_KEY,
+                algorithms=["HS256"],
+            )
+
+            user = User.objects.get(
+                pk=decoded_token["user_id"]
+            )
+
+            if user.is_verified:
+                context["status"] = "already_verified"
+                return context
+
+            user.is_verified = True
+            user.save()
+
+            context["status"] = "success"
+
+        except jwt.ExpiredSignatureError:
+            context["status"] = "expired"
+
+        except jwt.exceptions.DecodeError:
+            context["status"] = "invalid"
+
+        except User.DoesNotExist:
+            context["status"] = "invalid"
+
+        return context

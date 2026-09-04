@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Resend Activation Email{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 p-md-5">
+
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold">Resend Activation Email</h2>
+
+                    <p class="text-muted mb-0">
+                        Enter your email address to receive a new activation link.
+                    </p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label
+                            for="{{ form.email.id_for_label }}"
+                            class="form-label fw-semibold"
+                        >
+                            Email
+                        </label>
+
+                        {{ form.email }}
+
+                        {% for error in form.email.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100 py-2"
+                    >
+                        Send Activation Email
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-4">
+                    <a
+                        href="{% url 'accounts:login' %}"
+                        class="text-decoration-none"
+                    >
+                        Back to Login
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

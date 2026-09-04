@@ -182,7 +182,4 @@ class TestProfileUpdateView:
             "accounts:profile_edit",
             kwargs={"pk": another_user.profile.pk},
         )
-
-        response = client.get(url)
-
-        assert response.status_code == 404'''
+'''

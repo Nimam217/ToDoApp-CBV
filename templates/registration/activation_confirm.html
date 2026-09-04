@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Account Activation{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 p-md-5 text-center">
+
+                {% if status == "success" %}
+
+                    <h2 class="fw-bold mb-3">
+                        Account Activated
+                    </h2>
+
+                    <p class="text-muted mb-4">
+                        Your account has been successfully activated.
+                    </p>
+
+                    <a
+                        href="{% url 'accounts:login' %}"
+                        class="btn btn-primary w-100"
+                    >
+                        Log in
+                    </a>
+
+                {% elif status == "already_verified" %}
+
+                    <h2 class="fw-bold mb-3">
+                        Already Activated
+                    </h2>
+
+                    <p class="text-muted mb-4">
+                        Your account has already been verified.
+                    </p>
+
+                    <a
+                        href="{% url 'accounts:login' %}"
+                        class="btn btn-primary w-100"
+                    >
+                        Log in
+                    </a>
+
+                {% elif status == "expired" %}
+
+                    <h2 class="fw-bold mb-3">
+                        Activation Link Expired
+                    </h2>
+
+                    <p class="text-muted mb-4">
+                        Your activation link has expired.
+                    </p>
+
+                    <a
+                        href="{% url 'accounts:resend_activation' %}"
+                        class="btn btn-primary w-100"
+                    >
+                        Resend Activation Email
+                    </a>
+
+                {% elif status == "invalid" %}
+
+                    <h2 class="fw-bold mb-3">
+                        Invalid Activation Link
+                    </h2>
+
+                    <p class="text-muted mb-4">
+                        Your activation link is invalid.
+                    </p>
+
+                    <a
+                        href="{% url 'accounts:login' %}"
+                        class="btn btn-primary w-100"
+                    >
+                        Back to Login
+                    </a>
+
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
