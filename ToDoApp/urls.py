@@ -41,7 +41,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("accounts/", include("accounts.urls"),name="accounts"),
     path("",include("core.urls"),),
-    path("task/",include("task.urls"),name="task"),
+    path("task/",include("task.urls",namespace="task")),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path('swagger.json/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

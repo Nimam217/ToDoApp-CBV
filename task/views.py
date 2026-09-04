@@ -84,8 +84,6 @@ class TaskCreateView(LoginRequiredMixin,CreateView):
     model = Task
     form_class = TaskForm
     success_url = reverse_lazy("task:dashboard")
-    def get_queryset(self):
-        return Task.objects.select_related('user').filter(user=self.request.user)
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)

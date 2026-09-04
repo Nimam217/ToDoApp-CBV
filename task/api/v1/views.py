@@ -4,7 +4,6 @@ from rest_framework import viewsets
 from .paginations import DefaultPagination
 from ...models import Task
 from .serializers import TaskModelSerializer
-from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter,OrderingFilter
 from .filters import CustomFilterBackend
