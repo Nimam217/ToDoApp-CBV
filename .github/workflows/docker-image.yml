@@ -2,19 +2,20 @@ name: Django Test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: docker compose
-      run: docker-compose up -d
-    - name: run test
-      run: docker compose exec backend sh -c "flake8 . && pytest ."
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start containers
+        run: docker compose up -d
+
+      - name: Run tests
+        run: docker compose exec web sh -c "flake8 . && pytest"
