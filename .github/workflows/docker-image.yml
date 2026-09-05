@@ -26,4 +26,4 @@ jobs:
         run: docker compose up -d --build
 
       - name: Run tests
-        run: docker compose exec web sh -c "flake8 . && pytest"
+        run: docker compose exec web sh -c "flake8 . && pytest ."
