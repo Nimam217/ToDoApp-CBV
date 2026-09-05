@@ -7,13 +7,13 @@ from rest_framework.test import APIClient
 
 from task.models import Task
 
-
 User = get_user_model()
 
 
 # =========================
 # Users
 # =========================
+
 
 @pytest.fixture
 def user(db):
@@ -61,6 +61,7 @@ def superuser(db):
 # Profiles
 # =========================
 
+
 @pytest.fixture
 def profile(user):
     return user.profile
@@ -74,6 +75,7 @@ def another_profile(another_user):
 # =========================
 # Tasks
 # =========================
+
 
 @pytest.fixture
 def task(db, user):
@@ -109,6 +111,7 @@ def another_task(db, another_user):
 # Django RequestFactory
 # =========================
 
+
 @pytest.fixture
 def request_factory():
     return RequestFactory()
@@ -117,18 +120,14 @@ def request_factory():
 @pytest.fixture
 def list_request(request_factory):
     request = request_factory.get("/task/api/v1/")
-    request.parser_context = {
-        "kwargs": {}
-    }
+    request.parser_context = {"kwargs": {}}
 
     return request
 
 
 @pytest.fixture
 def detail_request(request_factory, task):
-    request = request_factory.get(
-        f"/task/api/v1/{task.pk}/"
-    )
+    request = request_factory.get(f"/task/api/v1/{task.pk}/")
     request.parser_context = {
         "kwargs": {
             "pk": task.pk,
@@ -141,6 +140,7 @@ def detail_request(request_factory, task):
 # =========================
 # DRF APIClient
 # =========================
+
 
 @pytest.fixture
 def api_client():

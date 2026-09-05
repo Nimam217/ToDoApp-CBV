@@ -1,4 +1,4 @@
-'''from django.urls import resolve, reverse
+"""from django.urls import resolve, reverse
 
 from accounts.api.v1.views import (
     ActivationView,
@@ -78,4 +78,4 @@ class TestAccountsApiUrls:
             kwargs={"token": "test-token"},
         )
         assert url == "/accounts/api/v1/activation/confirm/test-token/"
-        assert resolve(url).func.view_class is ActivationView'''
+        assert resolve(url).func.view_class is ActivationView"""

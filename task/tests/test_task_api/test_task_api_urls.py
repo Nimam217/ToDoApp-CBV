@@ -1,4 +1,4 @@
-'''import pytest
+"""import pytest
 
 from django.urls import resolve, reverse
 
@@ -23,4 +23,4 @@ class TestTaskAPIURL:
         )
 
         assert url == f"/task/api/v1/my-task/{task.pk}/"
-        assert resolve(url).func.cls == TaskModelViewSet'''
+        assert resolve(url).func.cls == TaskModelViewSet"""

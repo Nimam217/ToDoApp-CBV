@@ -1,5 +1,4 @@
 from django.db import models
-from django.conf import settings
 
 from accounts.models import User
 
@@ -15,5 +14,6 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
     def get_description(self):
         return self.description[0:5]

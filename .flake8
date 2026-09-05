@@ -12,3 +12,4 @@ exclude =
     __initial__.py
     accounts/migrations
     ToDoApp/settings.py
+    accounts/apps.py

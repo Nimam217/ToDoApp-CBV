@@ -2,7 +2,6 @@ from django.conf import settings
 from rest_framework import generics, status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -66,9 +65,7 @@ class CustomAuthToken(ObtainAuthToken):
 
         user = serializer.validated_data["user"]
 
-        token, created = Token.objects.get_or_create(
-            user=user
-        )
+        token, created = Token.objects.get_or_create(user=user)
 
         return Response(
             {
@@ -85,9 +82,7 @@ class CustomDiscardAuthToken(APIView):
     def post(self, request, *args, **kwargs):
         request.user.auth_token.delete()
 
-        return Response(
-            status=status.HTTP_204_NO_CONTENT
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProfileApiView(generics.RetrieveUpdateAPIView):
@@ -95,9 +90,7 @@ class ProfileApiView(generics.RetrieveUpdateAPIView):
     serializer_class = ProfileSerializer
 
     def get_object(self):
-        return Profile.objects.get(
-            user=self.request.user
-        )
+        return Profile.objects.get(user=self.request.user)
 
 
 class CustomObtainPairView(TokenObtainPairView):
@@ -114,27 +107,17 @@ class ChangePasswordView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         user = self.get_object()
 
-        serializer = self.get_serializer(
-            data=request.data
-        )
+        serializer = self.get_serializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
 
-        if not user.check_password(
-            serializer.validated_data["old_password"]
-        ):
+        if not user.check_password(serializer.validated_data["old_password"]):
             return Response(
-                {
-                    "old_password": [
-                        "wrong password"
-                    ]
-                },
+                {"old_password": ["wrong password"]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user.set_password(
-            serializer.validated_data["new_password1"]
-        )
+        user.set_password(serializer.validated_data["new_password1"])
         user.save()
 
         return Response(
@@ -151,13 +134,9 @@ class ResetPasswordEmailView(generics.GenericAPIView):
     serializer_class = ResetPasswordEmailSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data
-        )
+        serializer = self.get_serializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
 
@@ -167,9 +146,7 @@ class ResetPasswordEmailView(generics.GenericAPIView):
         send_reset_password_email(user, token)
 
         return Response(
-            {
-                "email": "Successfully send"
-            },
+            {"email": "Successfully send"},
             status=status.HTTP_200_OK,
         )
 
@@ -179,9 +156,7 @@ class ResetPasswordView(generics.GenericAPIView):
 
     def post(self, request, token, *args, **kwargs):
         try:
-            serializer = self.get_serializer(
-                data=request.data
-            )
+            serializer = self.get_serializer(data=request.data)
 
             decoded_token = jwt.decode(
                 token,
@@ -189,46 +164,30 @@ class ResetPasswordView(generics.GenericAPIView):
                 algorithms=["HS256"],
             )
 
-            user = User.objects.get(
-                pk=decoded_token["user_id"]
-            )
+            user = User.objects.get(pk=decoded_token["user_id"])
 
             if not user.is_verified:
-                raise AuthenticationFailed(
-                    "User is not verified"
-                )
+                raise AuthenticationFailed("User is not verified")
 
-            serializer.is_valid(
-                raise_exception=True
-            )
+            serializer.is_valid(raise_exception=True)
 
-            user.set_password(
-                serializer.validated_data[
-                    "new_password1"
-                ]
-            )
+            user.set_password(serializer.validated_data["new_password1"])
             user.save()
 
             return Response(
-                {
-                    "password": "Successfully reset your password"
-                },
+                {"password": "Successfully reset your password"},
                 status=status.HTTP_200_OK,
             )
 
         except jwt.ExpiredSignatureError:
             return Response(
-                {
-                    "error": "Activations link expired"
-                },
+                {"error": "Activations link expired"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         except jwt.exceptions.DecodeError:
             return Response(
-                {
-                    "error": "Invalid Token"
-                },
+                {"error": "Invalid Token"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -242,41 +201,31 @@ class ActivationView(APIView):
                 algorithms=["HS256"],
             )
 
-            user = User.objects.get(
-                pk=decoded_token["user_id"]
-            )
+            user = User.objects.get(pk=decoded_token["user_id"])
 
             if not user.is_verified:
                 user.is_verified = True
                 user.save()
 
                 return Response(
-                    {
-                        "email": "Successfully activated"
-                    },
+                    {"email": "Successfully activated"},
                     status=status.HTTP_200_OK,
                 )
 
             return Response(
-                {
-                    "detail": "User has already been verified"
-                },
+                {"detail": "User has already been verified"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         except jwt.ExpiredSignatureError:
             return Response(
-                {
-                    "error": "Activations link expired"
-                },
+                {"error": "Activations link expired"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         except jwt.exceptions.DecodeError:
             return Response(
-                {
-                    "error": "Invalid Token"
-                },
+                {"error": "Invalid Token"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -286,13 +235,9 @@ class ResendActivationEmail(generics.GenericAPIView):
     serializer_class = ResendActivationSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data
-        )
+        serializer = self.get_serializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
 
@@ -302,8 +247,6 @@ class ResendActivationEmail(generics.GenericAPIView):
         send_activation_email(user, token)
 
         return Response(
-            {
-                "detail": "email has been sent successfully"
-            },
+            {"detail": "email has been sent successfully"},
             status=status.HTTP_200_OK,
         )

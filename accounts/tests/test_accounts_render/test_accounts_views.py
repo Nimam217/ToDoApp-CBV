@@ -1,4 +1,4 @@
-'''import pytest
+"""import pytest
 from django.urls import reverse
 from django.test import RequestFactory
 
@@ -27,7 +27,9 @@ class TestRegisterView:
     def test_view_class(self, client):
         response = client.get(reverse("accounts:register"))
 
-        assert isinstance(response.resolver_match.func.view_class(), RegisterView)
+        assert isinstance(
+        response.resolver_match.func.view_class(),
+        RegisterView)
 
 
 @pytest.mark.django_db
@@ -39,8 +41,8 @@ class TestLoginView:
         assert response.status_code == 200
 
     def test_uses_custom_authentication_form(self):
-        assert CustomLoginView.authentication_form.__name__ == "CustomAuthenticationForm"
-
+        assert CustomLoginView.
+        authentication_form.__name__=="CustomAuthenticationForm"
 
 @pytest.mark.django_db
 class TestLogoutConfirmView:
@@ -182,4 +184,4 @@ class TestProfileUpdateView:
             "accounts:profile_edit",
             kwargs={"pk": another_user.profile.pk},
         )
-'''
+"""

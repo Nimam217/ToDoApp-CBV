@@ -2,7 +2,7 @@ import threading
 
 
 class EmailThread(threading.Thread):
-    def __init__(self,email):
+    def __init__(self, email):
         threading.Thread.__init__(self)
         self.email = email
 

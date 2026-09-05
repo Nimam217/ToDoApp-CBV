@@ -27,9 +27,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs.get("password") != attrs.get("password_confirm"):
-            raise serializers.ValidationError(
-                _("Passwords must match")
-            )
+            raise serializers.ValidationError(_("Passwords must match"))
 
         try:
             validate_password(attrs.get("password"))
@@ -117,9 +115,7 @@ class TokenObtainPairViewSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
 
         if not self.user.is_verified:
-            raise serializers.ValidationError(
-                _("Please verify your account.")
-            )
+            raise serializers.ValidationError(_("Please verify your account."))
 
         data["user"] = {
             "user_id": self.user.id,
@@ -148,11 +144,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
         if password1 != password2:
             raise serializers.ValidationError(
-                {
-                    "new_password1": _(
-                        "The two password fields didn't match."
-                    )
-                }
+                {"new_password1": _("The two password fields didn't match.")}
             )
 
         try:
@@ -165,6 +157,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
 
 class ResendActivationSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -212,11 +205,7 @@ class ResetPasswordSerializer(serializers.Serializer):
 
         if password1 != password2:
             raise serializers.ValidationError(
-                {
-                    "new_password1": _(
-                        "The two password fields didn't match."
-                    )
-                }
+                {"new_password1": _("The two password fields didn't match.")}
             )
 
         try:
