@@ -1,0 +1,22 @@
+name: Django Blog 
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: docker compose up
+      run: deocker compose up -d
+    - name: migrate
+      run: docker compose exec sh -c "python manage.py migrate"
+    - name: test and flake8 in exec
+      run: docker compose exec sh -c "flake8 . && pytest ."
