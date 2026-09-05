@@ -24,6 +24,7 @@ jobs:
 
       - name: Start containers
         run: docker compose up -d --build
-
+      - name: migrate changes
+        run: docker compose exec web sh -c "python manage.py makemigrations"
       - name: Run tests
         run: docker compose exec web sh -c "flake8 . && pytest"
