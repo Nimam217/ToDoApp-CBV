@@ -1,26 +1,28 @@
 from django.urls import path, include
-from django.contrib.auth.views import LoginView, PasswordResetDoneView
-
+from django.contrib.auth.views import PasswordResetDoneView
 from .views import (
     RegisterView,
     LogoutConfirmView,
     CustomPasswordResetView,
-    CustomLoginView, CustomPasswordResetConfirmView, ProfileView,
+    CustomLoginView,
+    CustomPasswordResetConfirmView,
+    ProfileView,
     ProfileUpdateView,
-    PasswordChangeConfirmView, PasswordChangeView, ResendActivationEmailView, ActivationConfirmView
+    PasswordChangeConfirmView,
+    PasswordChangeView,
+    ResendActivationEmailView,
+    ActivationConfirmView,
 )
 
 app_name = "accounts"
 
 urlpatterns = [
-
     # Custom Login
     path(
         "login/",
         CustomLoginView.as_view(),
         name="login",
     ),
-
     path(
         "reset/<uidb64>/<token>/",
         CustomPasswordResetConfirmView.as_view(
@@ -34,7 +36,6 @@ urlpatterns = [
         CustomPasswordResetView.as_view(),
         name="password_reset",
     ),
-
     # Password Reset Done
     path(
         "password_reset/done/",
@@ -47,25 +48,23 @@ urlpatterns = [
         "password_change/",
         PasswordChangeView.as_view(),
         name="password_change",
-
     ),
     path(
         "password_change/done/",
-         PasswordChangeConfirmView.as_view(),
-         name="password_change_done"),
+        PasswordChangeConfirmView.as_view(),
+        name="password_change_done",
+    ),
     # Django Auth URLs
     path(
         "",
         include("django.contrib.auth.urls"),
     ),
-
     # Register
     path(
         "register/",
         RegisterView.as_view(),
         name="register",
     ),
-
     # Logout confirmation
     path(
         "logout_confirm/",
@@ -77,24 +76,22 @@ urlpatterns = [
         ProfileView.as_view(),
         name="profile",
     ),
-path(
-    "profile/<int:pk>/edit/",
-    ProfileUpdateView.as_view(),
-    name="profile_edit",
-),
-path(
-    "resend_activation/",
-    ResendActivationEmailView.as_view(),
-    name="resend_activation",
-),
-path(
-    "activation/<str:token>/",
-    ActivationConfirmView.as_view(),
-    name="activation_confirm",
-),
-
     path(
-        'api/v1/',
-        include('accounts.api.v1.urls',namespace="accounts-api-v1")
+        "profile/<int:pk>/edit/",
+        ProfileUpdateView.as_view(),
+        name="profile_edit",
+    ),
+    path(
+        "resend_activation/",
+        ResendActivationEmailView.as_view(),
+        name="resend_activation",
+    ),
+    path(
+        "activation/<str:token>/",
+        ActivationConfirmView.as_view(),
+        name="activation_confirm",
+    ),
+    path(
+        "api/v1/", include("accounts.api.v1.urls", namespace="accounts-api-v1")
     ),
 ]

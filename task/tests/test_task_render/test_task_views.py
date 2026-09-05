@@ -3,7 +3,9 @@ import pytest
 from django.urls import reverse
 
 
-from ...models import  Task
+from ...models import Task
+
+
 @pytest.mark.django_db
 class TestDashboardView:
 
@@ -13,9 +15,7 @@ class TestDashboardView:
         response = client.get(url)
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_authenticated(self, client, user):
         client.force_login(user)
@@ -200,9 +200,7 @@ class TestTaskDetailView:
         response = client.get(url)
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_owner(self, client, user, task):
         client.force_login(user)
@@ -244,9 +242,7 @@ class TestTaskCreateView:
         response = client.get(url)
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_get(self, client, user):
         client.force_login(user)
@@ -274,9 +270,7 @@ class TestTaskCreateView:
         assert response.status_code == 302
         assert response.url == reverse("task:dashboard")
 
-        created_task = Task.objects.get(
-            title="New Task"
-        )
+        created_task = Task.objects.get(title="New Task")
 
         assert created_task.user == user
         assert created_task.description == "New task description"
@@ -295,9 +289,7 @@ class TestTaskUpdateView:
         response = client.get(url)
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_owner(self, client, user, task):
         client.force_login(user)
@@ -367,9 +359,7 @@ class TestTaskDeleteView:
         response = client.get(url)
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_owner(self, client, user, task):
         client.force_login(user)
@@ -397,9 +387,7 @@ class TestTaskDeleteView:
         assert response.status_code == 302
         assert response.url == reverse("task:dashboard")
 
-        assert not Task.objects.filter(
-            pk=task.pk
-        ).exists()
+        assert not Task.objects.filter(pk=task.pk).exists()
 
     def test_other_user_cannot_delete_task(
         self,

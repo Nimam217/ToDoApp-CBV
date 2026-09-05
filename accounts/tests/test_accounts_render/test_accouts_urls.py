@@ -1,5 +1,5 @@
 import pytest
-from django.urls import NoReverseMatch, reverse, resolve
+from django.urls import reverse, resolve
 
 from accounts.views import (
     CustomLoginView,
@@ -88,52 +88,68 @@ class TestAccountsURLs:
         assert resolve(url).func.view_class == ProfileUpdateView
 
     def test_accounts_api_namespace(self):
-        assert reverse(
-            "accounts:accounts-api-v1:registration"
-        ) == "/accounts/api/v1/registration/"
+        assert (
+            reverse("accounts:accounts-api-v1:registration")
+            == "/accounts/api/v1/registration/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:token_auth"
-        ) == "/accounts/api/v1/token-auth/create/"
+        assert (
+            reverse("accounts:accounts-api-v1:token_auth")
+            == "/accounts/api/v1/token-auth/create/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:discard_auth_token"
-        ) == "/accounts/api/v1/token-auth/discard/"
+        assert (
+            reverse("accounts:accounts-api-v1:discard_auth_token")
+            == "/accounts/api/v1/token-auth/discard/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:profile"
-        ) == "/accounts/api/v1/profile/"
+        assert (
+            reverse("accounts:accounts-api-v1:profile")
+            == "/accounts/api/v1/profile/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:token_obtain_pair"
-        ) == "/accounts/api/v1/jwt/create/"
+        assert (
+            reverse("accounts:accounts-api-v1:token_obtain_pair")
+            == "/accounts/api/v1/jwt/create/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:token_refresh"
-        ) == "/accounts/api/v1/jwt/refresh/"
+        assert (
+            reverse("accounts:accounts-api-v1:token_refresh")
+            == "/accounts/api/v1/jwt/refresh/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:token_verify"
-        ) == "/accounts/api/v1/jwt/verify/"
+        assert (
+            reverse("accounts:accounts-api-v1:token_verify")
+            == "/accounts/api/v1/jwt/verify/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:change_password"
-        ) == "/accounts/api/v1/change_password/"
+        assert (
+            reverse("accounts:accounts-api-v1:change_password")
+            == "/accounts/api/v1/change_password/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:reset_password"
-        ) == "/accounts/api/v1/reset_password/"
+        assert (
+            reverse("accounts:accounts-api-v1:reset_password")
+            == "/accounts/api/v1/reset_password/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:reset_password_confirm",
-            kwargs={"token": "test-token"},
-        ) == "/accounts/api/v1/reset_password/confirm/test-token/"
+        assert (
+            reverse(
+                "accounts:accounts-api-v1:reset_password_confirm",
+                kwargs={"token": "test-token"},
+            )
+            == "/accounts/api/v1/reset_password/confirm/test-token/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:activation_resend"
-        ) == "/accounts/api/v1/activation/resend/"
+        assert (
+            reverse("accounts:accounts-api-v1:activation_resend")
+            == "/accounts/api/v1/activation/resend/"
+        )
 
-        assert reverse(
-            "accounts:accounts-api-v1:activation",
-            kwargs={"token": "test-token"},
-        ) == "/accounts/api/v1/activation/confirm/test-token/"
+        assert (
+            reverse(
+                "accounts:accounts-api-v1:activation",
+                kwargs={"token": "test-token"},
+            )
+            == "/accounts/api/v1/activation/confirm/test-token/"
+        )

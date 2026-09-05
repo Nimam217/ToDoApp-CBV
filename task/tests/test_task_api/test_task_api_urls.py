@@ -9,9 +9,7 @@ from task.api.v1.views import TaskModelViewSet
 class TestTaskAPIURL:
 
     def test_task_list_url(self):
-        url = reverse(
-            "task:task_api_v1:task-api-list"
-        )
+        url = reverse("task:task_api_v1:task-api-list")
 
         assert url == "/task/api/v1/my-task/"
         assert resolve(url).func.cls == TaskModelViewSet

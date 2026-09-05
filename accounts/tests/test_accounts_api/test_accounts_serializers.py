@@ -11,6 +11,7 @@ from accounts.api.v1.serializers import (
     ResetPasswordEmailSerializer,
     ResetPasswordSerializer,
 )
+
 User = get_user_model()
 
 
@@ -183,7 +184,9 @@ class TestTokenObtainPairViewSerializer:
         assert "access" in serializer.validated_data
         assert "refresh" in serializer.validated_data
         assert serializer.validated_data["user"]["user_id"] == verified_user.id
-        assert serializer.validated_data["user"]["email"] == verified_user.email
+        assert (
+            serializer.validated_data["user"]["email"] == verified_user.email
+        )
 
     def test_unverified_user(self, user):
         serializer = TokenObtainPairViewSerializer(
@@ -206,6 +209,7 @@ class TestTokenObtainPairViewSerializer:
 
         with pytest.raises(AuthenticationFailed):
             serializer.is_valid()
+
 
 @pytest.mark.django_db
 class TestChangePasswordSerializer:
@@ -253,9 +257,7 @@ class TestChangePasswordSerializer:
 class TestResendActivationSerializer:
 
     def test_valid_email(self, user):
-        serializer = ResendActivationSerializer(
-            data={"email": user.email}
-        )
+        serializer = ResendActivationSerializer(data={"email": user.email})
 
         assert serializer.is_valid(), serializer.errors
         assert serializer.validated_data["user"] == user
@@ -273,9 +275,7 @@ class TestResendActivationSerializer:
 class TestResetPasswordEmailSerializer:
 
     def test_valid_email(self, user):
-        serializer = ResetPasswordEmailSerializer(
-            data={"email": user.email}
-        )
+        serializer = ResetPasswordEmailSerializer(data={"email": user.email})
 
         assert serializer.is_valid(), serializer.errors
         assert serializer.validated_data["user"] == user

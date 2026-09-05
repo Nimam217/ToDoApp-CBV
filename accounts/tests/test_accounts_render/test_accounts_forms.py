@@ -4,12 +4,12 @@ from django.contrib.auth import get_user_model
 from accounts.forms import (
     CustomAuthenticationForm,
     CustomUserCreationForm,
-    ProfileForm,
+
 )
-from accounts.models import Profile
 
 
 User = get_user_model()
+
 
 @pytest.mark.django_db
 class TestCustomUserCreationForm:

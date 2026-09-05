@@ -25,17 +25,21 @@ class CustomUserCreationForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields["password1"].widget.attrs.update({
-            "class": "form-control",
-            "placeholder": "Enter your password",
-            "autocomplete": "new-password",
-        })
+        self.fields["password1"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Enter your password",
+                "autocomplete": "new-password",
+            }
+        )
 
-        self.fields["password2"].widget.attrs.update({
-            "class": "form-control",
-            "placeholder": "Confirm your password",
-            "autocomplete": "new-password",
-        })
+        self.fields["password2"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Confirm your password",
+                "autocomplete": "new-password",
+            }
+        )
 
 
 class CustomAuthenticationForm(AuthenticationForm):
@@ -77,9 +81,7 @@ class ProfileForm(forms.ModelForm):
         model = Profile
         fields = ("image", "first_name", "last_name", "description")
         widgets = {
-            "image": forms.ClearableFileInput(
-                attrs={"class": "form-control"}
-            ),
+            "image": forms.ClearableFileInput(attrs={"class": "form-control"}),
             "first_name": forms.TextInput(
                 attrs={
                     "class": "form-control",

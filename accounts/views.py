@@ -1,4 +1,3 @@
-from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import (
     LoginView,
@@ -6,30 +5,28 @@ from django.contrib.auth.views import (
     PasswordResetConfirmView,
     PasswordResetView,
 )
+from django.contrib import messages
+from .mixins import VerifiedRequiredMixin
+from .models import Profile, User
+from .services import send_activation_email, send_web_activation_email
+import jwt
 from django.urls import reverse, reverse_lazy
-from django.views.generic import CreateView, DetailView, TemplateView, UpdateView,FormView
+from django.views.generic import (
+    CreateView,
+    DetailView,
+    TemplateView,
+    UpdateView,
+    FormView,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .forms import (
     CustomAuthenticationForm,
     CustomUserCreationForm,
     ProfileForm,
-    ResendActivationEmailForm
+    ResendActivationEmailForm,
 )
 from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth import get_user_model
-from django.shortcuts import render
 
-
-
-
-User = get_user_model()
-
-from .mixins import VerifiedRequiredMixin
-from .models import Profile,User
-from .services import send_activation_email, send_web_activation_email
-import jwt
 
 class RegisterView(CreateView):
     template_name = "registration/register.html"
@@ -43,7 +40,8 @@ class RegisterView(CreateView):
 
         messages.success(
             self.request,
-            "Registration successful. Please check your email to activate your account.",
+            "Registration successful. "
+            "Please check your email to activate your account.",
         )
 
         return response
@@ -86,9 +84,7 @@ class ProfileView(
     context_object_name = "profile"
 
     def get_queryset(self):
-        return Profile.objects.filter(
-            user=self.request.user
-        )
+        return Profile.objects.filter(user=self.request.user)
 
 
 class ProfileUpdateView(
@@ -101,9 +97,7 @@ class ProfileUpdateView(
     template_name = "accounts/profile_edit.html"
 
     def get_queryset(self):
-        return Profile.objects.filter(
-            user=self.request.user
-        )
+        return Profile.objects.filter(user=self.request.user)
 
     def get_success_url(self):
         return reverse(
@@ -140,18 +134,19 @@ class ResendActivationEmailView(FormView):
     success_url = reverse_lazy("accounts:login")
 
     def form_valid(self, form):
-        user = User.objects.filter(
-            email=form.cleaned_data["email"]
-        ).first()
+        user = User.objects.filter(email=form.cleaned_data["email"]).first()
 
         if user and not user.is_verified:
             refresh = RefreshToken.for_user(user)
             token = str(refresh.access_token)
-            send_web_activation_email(user,token)
+            send_web_activation_email(user, token)
 
-        messages.success(
-            self.request,
-            "If the account exists and is not verified, an activation email has been sent.",
+        (
+            messages.success(
+                self.request,
+                "If the account exists and is not verified, "
+                "an activation email has been sent.",
+            )
         )
 
         return super().form_valid(form)
@@ -171,9 +166,7 @@ class ActivationConfirmView(TemplateView):
                 algorithms=["HS256"],
             )
 
-            user = User.objects.get(
-                pk=decoded_token["user_id"]
-            )
+            user = User.objects.get(pk=decoded_token["user_id"])
 
             if user.is_verified:
                 context["status"] = "already_verified"

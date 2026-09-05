@@ -1,10 +1,7 @@
-import jwt
 import pytest
-from django.conf import settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from unittest.mock import patch
 
@@ -38,9 +35,7 @@ class TestRegistrationApiView:
 
         mock_send_activation_email.assert_called_once()
 
-        called_user, called_token = (
-            mock_send_activation_email.call_args.args
-        )
+        called_user, called_token = mock_send_activation_email.call_args.args
 
         assert called_user == user
         assert isinstance(called_token, str)
@@ -141,18 +136,14 @@ class TestCustomDiscardAuthToken:
     def test_authenticated(self, api_client, verified_user):
         token = Token.objects.create(user=verified_user)
 
-        api_client.credentials(
-            HTTP_AUTHORIZATION=f"Token {token.key}"
-        )
+        api_client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
 
         response = api_client.post(
             reverse("accounts:accounts-api-v1:discard_auth_token")
         )
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Token.objects.filter(
-            user=verified_user
-        ).exists()
+        assert not Token.objects.filter(user=verified_user).exists()
 
     def test_unauthenticated(self, api_client):
         response = api_client.post(
@@ -168,9 +159,7 @@ class TestProfileApiView:
     def test_get_profile(self, api_client, verified_user):
         api_client.force_authenticate(user=verified_user)
 
-        response = api_client.get(
-            reverse("accounts:accounts-api-v1:profile")
-        )
+        response = api_client.get(reverse("accounts:accounts-api-v1:profile"))
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["email"] == verified_user.email
@@ -196,18 +185,14 @@ class TestProfileApiView:
         assert verified_user.profile.description == "Updated profile"
 
     def test_unauthenticated(self, api_client):
-        response = api_client.get(
-            reverse("accounts:accounts-api-v1:profile")
-        )
+        response = api_client.get(reverse("accounts:accounts-api-v1:profile"))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_unverified_user(self, api_client, user):
         api_client.force_authenticate(user=user)
 
-        response = api_client.get(
-            reverse("accounts:accounts-api-v1:profile")
-        )
+        response = api_client.get(reverse("accounts:accounts-api-v1:profile"))
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -336,9 +321,7 @@ class TestResetPasswordEmailView:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == {
-            "email": "Successfully send"
-        }
+        assert response.data == {"email": "Successfully send"}
 
         mock_send_reset_password_email.assert_called_once()
 
@@ -384,9 +367,7 @@ class TestResetPasswordView:
 
         verified_user.refresh_from_db()
 
-        assert verified_user.check_password(
-            "NewPassword123"
-        )
+        assert verified_user.check_password("NewPassword123")
 
     def test_unverified_user(self, api_client, user):
         refresh = RefreshToken.for_user(user)
@@ -437,9 +418,7 @@ class TestActivationView:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == {
-            "email": "Successfully activated"
-        }
+        assert response.data == {"email": "Successfully activated"}
 
         user.refresh_from_db()
 
@@ -461,9 +440,7 @@ class TestActivationView:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["detail"] == (
-            "User has already been verified"
-        )
+        assert response.data["detail"] == ("User has already been verified")
 
     def test_invalid_token(self, api_client):
         response = api_client.get(
@@ -490,31 +467,23 @@ class TestResendActivationEmail:
         api_client.force_authenticate(user=user)
 
         response = api_client.post(
-            reverse(
-                "accounts:accounts-api-v1:activation_resend"
-            ),
+            reverse("accounts:accounts-api-v1:activation_resend"),
             {"email": user.email},
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == {
-            "detail": "email has been sent successfully"
-        }
+        assert response.data == {"detail": "email has been sent successfully"}
 
         mock_send_activation_email.assert_called_once()
 
-        called_user, called_token = (
-            mock_send_activation_email.call_args.args
-        )
+        called_user, called_token = mock_send_activation_email.call_args.args
 
         assert called_user == user
         assert isinstance(called_token, str)
 
     def test_unauthenticated(self, api_client, user):
         response = api_client.post(
-            reverse(
-                "accounts:accounts-api-v1:activation_resend"
-            ),
+            reverse("accounts:accounts-api-v1:activation_resend"),
             {"email": user.email},
         )
 
@@ -528,9 +497,7 @@ class TestResendActivationEmail:
         api_client.force_authenticate(user=user)
 
         response = api_client.post(
-            reverse(
-                "accounts:accounts-api-v1:activation_resend"
-            ),
+            reverse("accounts:accounts-api-v1:activation_resend"),
             {"email": "notfound@example.com"},
         )
 

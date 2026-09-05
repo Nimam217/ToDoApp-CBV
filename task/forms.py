@@ -20,7 +20,6 @@ class TaskForm(forms.ModelForm):
                     "placeholder": "Enter task title",
                 }
             ),
-
             "description": forms.Textarea(
                 attrs={
                     "class": "form-control",
@@ -28,7 +27,6 @@ class TaskForm(forms.ModelForm):
                     "rows": 5,
                 }
             ),
-
             "done": forms.CheckboxInput(
                 attrs={
                     "class": "form-check-input",
