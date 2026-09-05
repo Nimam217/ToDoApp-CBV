@@ -25,5 +25,8 @@ jobs:
       - name: Start containers
         run: docker compose up -d --build
 
-      - name: Run tests
-        run: docker compose run --rm web sh -c "flake8 . && pytest . -v"est"
+      - name: lint
+        run: docker compose exec web flake8 .
+
+      - name: test
+        run: docker compose exec web pytest . -v"
