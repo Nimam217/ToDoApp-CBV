@@ -1,4 +1,4 @@
-"""import pytest
+import pytest
 from django.urls import reverse
 from django.test import RequestFactory
 
@@ -184,4 +184,3 @@ class TestProfileUpdateView:
             "accounts:profile_edit",
             kwargs={"pk": another_user.profile.pk},
         )
-"""

@@ -1,4 +1,4 @@
-"""import pytest
+import pytest
 from django.urls import NoReverseMatch, reverse, resolve
 
 from accounts.views import (
@@ -137,4 +137,3 @@ class TestAccountsURLs:
             "accounts:accounts-api-v1:activation",
             kwargs={"token": "test-token"},
         ) == "/accounts/api/v1/activation/confirm/test-token/"
-"""

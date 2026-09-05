@@ -1,4 +1,4 @@
-'''import pytest
+import pytest
 
 from task.forms import TaskForm
 
@@ -84,4 +84,4 @@ class TestTaskForm:
         widget = form.fields["done"].widget
 
         assert widget.__class__.__name__ == "CheckboxInput"
-        assert widget.attrs["class"] == "form-check-input"'''
+        assert widget.attrs["class"] == "form-check-input"

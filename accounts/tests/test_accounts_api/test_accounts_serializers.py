@@ -1,4 +1,4 @@
-"""import pytest
+import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import AuthenticationFailed
 from accounts.api.v1.serializers import (
@@ -323,4 +323,4 @@ class TestResetPasswordSerializer:
         )
 
         assert not serializer.is_valid()
-        assert "new_password1" in serializer.errors"""
+        assert "new_password1" in serializer.errors
