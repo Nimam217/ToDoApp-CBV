@@ -11,5 +11,7 @@ markdown
 drf-yasg
 djangorestframework-simplejwt
 django-mail-templated
+pytest
+pytest-django
 black
 flake8
