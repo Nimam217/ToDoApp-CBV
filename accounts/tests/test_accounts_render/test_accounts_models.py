@@ -1,4 +1,4 @@
-'''import pytest
+"""import pytest
 from django.contrib.auth import get_user_model
 
 from accounts.models import Profile
@@ -101,4 +101,4 @@ class TestProfileModel:
 
         assert profile.user_id == user.id
         assert Profile.objects.filter(user=user).count() == 1
-'''
+"""

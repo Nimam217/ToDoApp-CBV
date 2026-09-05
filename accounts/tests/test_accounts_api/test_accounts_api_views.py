@@ -1,4 +1,4 @@
-'''import pytest
+"""import pytest
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -503,4 +503,4 @@ class TestResendActivationEmail:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "email" in response.data
-'''
+"""

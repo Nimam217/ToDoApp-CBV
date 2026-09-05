@@ -1,4 +1,4 @@
-'''import pytest
+"""import pytest
 from django.urls import reverse, resolve
 
 from accounts.views import (
@@ -153,4 +153,4 @@ class TestAccountsURLs:
             )
             == "/accounts/api/v1/activation/confirm/test-token/"
         )
-'''
+"""
