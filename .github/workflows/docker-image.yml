@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: docker compose up
-      run: deocker compose up -d
+      run: docker compose up -d
     - name: migrate
       run: docker compose exec sh -c "python manage.py migrate"
     - name: test and flake8 in exec
