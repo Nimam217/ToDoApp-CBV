@@ -1,4 +1,4 @@
-"""from task.forms import TaskForm
+from task.forms import TaskForm
 
 
 class TestTaskForm:
@@ -83,4 +83,3 @@ class TestTaskForm:
 
         assert widget.__class__.__name__ == "CheckboxInput"
         assert widget.attrs["class"] == "form-check-input"
-"""

@@ -1,4 +1,4 @@
-'''import pytest
+"""import pytest
 
 from django.urls import reverse
 
@@ -106,4 +106,4 @@ class TestHomeView:
         assert len(recent_tasks) == 3
         assert recent_tasks[0].created_at >= recent_tasks[1].created_at
         assert recent_tasks[1].created_at >= recent_tasks[2].created_at
-'''
+"""

@@ -1,12 +1,10 @@
-"""import pytest
+import pytest
 from django.contrib.auth import get_user_model
 
 from accounts.forms import (
     CustomAuthenticationForm,
     CustomUserCreationForm,
-
 )
-
 
 User = get_user_model()
 
@@ -133,4 +131,3 @@ class TestCustomAuthenticationForm:
         )
 
         assert not form.is_valid()
-"""

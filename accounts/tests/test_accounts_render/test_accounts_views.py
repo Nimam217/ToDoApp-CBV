@@ -1,4 +1,4 @@
-"""import pytest
+import pytest
 
 from django.urls import reverse
 
@@ -405,4 +405,3 @@ class TestTaskDeleteView:
         response = client.get(url)
 
         assert response.status_code == 404
-"""

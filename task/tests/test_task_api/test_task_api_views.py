@@ -1,4 +1,4 @@
-"""import pytest
+import pytest
 from django.urls import reverse
 from rest_framework import status
 
@@ -293,4 +293,3 @@ class TestTaskAPIViews:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["results"][0]["id"] == first_task.id
         assert response.data["results"][1]["id"] == second_task.id
-"""
