@@ -2,28 +2,30 @@ name: Django Test
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
+
   build:
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Create .env
-        run: |
+    
+    - uses: actions/checkout@v4
+    - name: Create .env
+      run: |
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
           echo "DEBUG=1" >> .env
           echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
           echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
 
-      - name: Start database
-        run: docker compose up -d db
+          
+    - name: docker compose
+      run: docker compose up -d
+    - name: run test
+      run: docker compose exec backend sh -c "flake8 . && pytest ."
 
-      - name: Run tests
-        run: docker compose run --rm web pytest . -v
