@@ -11,3 +11,7 @@ markdown
 drf-yasg
 djangorestframework-simplejwt
 django-mail-templated
+Faker
+celery
+redis
+django-celery-beat

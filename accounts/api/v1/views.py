@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 import jwt
@@ -27,6 +27,7 @@ from accounts.services import (
     send_activation_email,
     send_reset_password_email,
 )
+from ...tasks import send_activation_email_task, send_reset_password_email_task
 
 
 class RegistrationApiView(generics.GenericAPIView):
@@ -38,10 +39,20 @@ class RegistrationApiView(generics.GenericAPIView):
 
         user = serializer.save()
 
-        refresh = RefreshToken.for_user(user)
-        token = str(refresh.access_token)
+        access = AccessToken.for_user(user)
+        token = str(access)
 
-        send_activation_email(user, token)
+        send_activation_email_task.apply_async(
+            args=[token, user.id],
+            expires=60,
+            retry=True,
+            retry_policy={
+                "max_retries": 3,
+                "interval_start": 1,
+                "interval_step": 2,
+                "interval_max": 10,
+            },
+        )
 
         return Response(
             {
@@ -138,17 +149,29 @@ class ResetPasswordEmailView(generics.GenericAPIView):
 
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data["user"]
+        user = User.objects.get(email=serializer.validated_data["email"])
+        if user:
 
-        refresh = RefreshToken.for_user(user)
-        token = str(refresh.access_token)
+            access = AccessToken.for_user(user)
+            token = str(access)
 
-        send_reset_password_email(user, token)
+            send_reset_password_email_task.apply_async(
+                args=[token, user.id],
+                expires=60,
+                retry=True,
+                retry_policy={
+                    "max_retries": 3,
+                    "interval_start": 1,
+                    "interval_step": 2,
+                    "interval_max": 10,
+                },
+            )
 
-        return Response(
-            {"email": "Successfully send"},
-            status=status.HTTP_200_OK,
-        )
+            return Response(
+                {"detail": "if your account exist ,"
+                           "email has been sent successfully"},
+
+            )
 
 
 class ResetPasswordView(generics.GenericAPIView):
@@ -231,7 +254,7 @@ class ActivationView(APIView):
 
 
 class ResendActivationEmail(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+
     serializer_class = ResendActivationSerializer
 
     def post(self, request, *args, **kwargs):
@@ -239,14 +262,31 @@ class ResendActivationEmail(generics.GenericAPIView):
 
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data["user"]
+        user = User.objects.get(email=serializer.validated_data["email"])
+        if user and not user.is_verified:
 
-        refresh = RefreshToken.for_user(user)
-        token = str(refresh.access_token)
+            access = AccessToken.for_user(user)
+            token = str(access)
 
-        send_activation_email(user, token)
+            send_activation_email_task.apply_async(
+            args=[token, user.id],
+            expires=60,
+            retry=True,
+            retry_policy={
+                "max_retries": 3,
+                "interval_start": 1,
+                "interval_step": 2,
+                "interval_max": 10,
+            },
+            )
 
-        return Response(
-            {"detail": "email has been sent successfully"},
-            status=status.HTTP_200_OK,
-        )
+            return Response(
+                {"detail": "If the account exists and is not verified, "
+                    "an activation email has been sent.",},
+
+            )
+        else:
+            return Response(
+                {"detail":"somthing went wrong"},
+
+            )

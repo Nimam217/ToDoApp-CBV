@@ -14,7 +14,7 @@ def send_activation_email(user, token):
         to=[user.email],
     )
 
-    EmailThread(message).start()
+    message.send()
 
 
 def send_reset_password_email(user, token):
@@ -28,7 +28,7 @@ def send_reset_password_email(user, token):
         to=[user.email],
     )
 
-    EmailThread(message).start()
+    message.send()
 
 
 def send_web_activation_email(user, token):
@@ -43,4 +43,4 @@ def send_web_activation_email(user, token):
         to=[user.email],
     )
 
-    EmailThread(message).start()
+    message.send()

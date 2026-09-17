@@ -11,11 +11,12 @@ from django.views.generic import (
 
 from task.forms import TaskForm
 from task.models import Task
+from accounts.mixins import VerifiedRequiredMixin
 
 # Create your views here.
 
 
-class DashboardView(LoginRequiredMixin, TemplateView):
+class DashboardView(LoginRequiredMixin,VerifiedRequiredMixin, TemplateView,):
 
     template_name = "task/dashboard.html"
 
@@ -110,3 +111,4 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
         return Task.objects.select_related("user").filter(
             user=self.request.user
         )
+
