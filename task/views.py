@@ -8,6 +8,7 @@ from django.views.generic import (
     DetailView,
     TemplateView,
 )
+from rest_framework.views import APIView
 
 from task.forms import TaskForm
 from task.models import Task
@@ -74,7 +75,7 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     model = Task
 
     def get_queryset(self):
-        return Task.objects.select_related("user").filter(
+        return Task.objects.filter(
             user=self.request.user
         )
 
@@ -111,4 +112,5 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
         return Task.objects.select_related("user").filter(
             user=self.request.user
         )
+
 
