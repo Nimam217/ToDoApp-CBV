@@ -260,15 +260,7 @@ class TestResendActivationSerializer:
         serializer = ResendActivationSerializer(data={"email": user.email})
 
         assert serializer.is_valid(), serializer.errors
-        assert serializer.validated_data["user"] == user
-
-    def test_nonexistent_email(self):
-        serializer = ResendActivationSerializer(
-            data={"email": "notfound@example.com"}
-        )
-
-        assert not serializer.is_valid()
-        assert "email" in serializer.errors
+        assert serializer.validated_data["email"] == user.email
 
 
 @pytest.mark.django_db
@@ -278,15 +270,7 @@ class TestResetPasswordEmailSerializer:
         serializer = ResetPasswordEmailSerializer(data={"email": user.email})
 
         assert serializer.is_valid(), serializer.errors
-        assert serializer.validated_data["user"] == user
-
-    def test_nonexistent_email(self):
-        serializer = ResetPasswordEmailSerializer(
-            data={"email": "notfound@example.com"}
-        )
-
-        assert not serializer.is_valid()
-        assert "email" in serializer.errors
+        assert serializer.validated_data["email"] == user.email
 
 
 class TestResetPasswordSerializer:

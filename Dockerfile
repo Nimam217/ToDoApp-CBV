@@ -18,9 +18,10 @@ WORKDIR /app
 
 COPY --from=builder /root/.local /root/.local
 COPY wait-for-it.sh .
+COPY . .
 RUN chmod +x wait-for-it.sh
 
-COPY . .
+
 
 
 

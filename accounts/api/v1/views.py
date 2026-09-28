@@ -6,9 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-
 import jwt
 
 from ...models import Profile, User
@@ -23,10 +22,8 @@ from .serializers import (
     ResetPasswordSerializer,
     TokenObtainPairViewSerializer,
 )
-from accounts.services import (
-    send_activation_email,
-    send_reset_password_email,
-)
+
+from ...tasks import send_activation_email_task, send_reset_password_email_task
 
 
 class RegistrationApiView(generics.GenericAPIView):
@@ -38,10 +35,20 @@ class RegistrationApiView(generics.GenericAPIView):
 
         user = serializer.save()
 
-        refresh = RefreshToken.for_user(user)
-        token = str(refresh.access_token)
+        access = AccessToken.for_user(user)
+        token = str(access)
 
-        send_activation_email(user, token)
+        send_activation_email_task.apply_async(
+            args=[token, user.id],
+            expires=60,
+            retry=True,
+            retry_policy={
+                "max_retries": 3,
+                "interval_start": 1,
+                "interval_step": 2,
+                "interval_max": 10,
+            },
+        )
 
         return Response(
             {
@@ -135,18 +142,35 @@ class ResetPasswordEmailView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data["user"]
+        email = serializer.validated_data["email"]
 
-        refresh = RefreshToken.for_user(user)
-        token = str(refresh.access_token)
+        user = User.objects.filter(email=email).first()
 
-        send_reset_password_email(user, token)
+        if user:
+            access = AccessToken.for_user(user)
+            token = str(access)
+
+            send_reset_password_email_task.apply_async(
+                args=[token, user.id],
+                expires=60,
+                retry=True,
+                retry_policy={
+                    "max_retries": 3,
+                    "interval_start": 1,
+                    "interval_step": 2,
+                    "interval_max": 10,
+                },
+            )
 
         return Response(
-            {"email": "Successfully send"},
+            {
+                "detail": (
+                    "If your account exists, "
+                    "an email has been sent successfully"
+                )
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -231,7 +255,7 @@ class ActivationView(APIView):
 
 
 class ResendActivationEmail(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+
     serializer_class = ResendActivationSerializer
 
     def post(self, request, *args, **kwargs):
@@ -239,14 +263,29 @@ class ResendActivationEmail(generics.GenericAPIView):
 
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data["user"]
+        user = User.objects.filter(
+            email=serializer.validated_data["email"]
+        ).first()
+        if user and not user.is_verified:
 
-        refresh = RefreshToken.for_user(user)
-        token = str(refresh.access_token)
+            access = AccessToken.for_user(user)
+            token = str(access)
 
-        send_activation_email(user, token)
+            send_activation_email_task.apply_async(
+                args=[token, user.id],
+                expires=60,
+                retry=True,
+                retry_policy={
+                    "max_retries": 3,
+                    "interval_start": 1,
+                    "interval_step": 2,
+                    "interval_max": 10,
+                },
+            )
 
         return Response(
-            {"detail": "email has been sent successfully"},
-            status=status.HTTP_200_OK,
+            {
+                "detail": "If the account exists and is not verified, "
+                "an activation email has been sent.",
+            },
         )

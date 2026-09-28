@@ -8,7 +8,7 @@ from django.contrib.auth.views import (
 from django.contrib import messages
 from .mixins import VerifiedRequiredMixin
 from .models import Profile, User
-from .services import send_activation_email, send_web_activation_email
+
 import jwt
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
@@ -18,7 +18,7 @@ from django.views.generic import (
     UpdateView,
     FormView,
 )
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken
 from .forms import (
     CustomAuthenticationForm,
     CustomUserCreationForm,
@@ -26,6 +26,8 @@ from .forms import (
     ResendActivationEmailForm,
 )
 from django.conf import settings
+
+from .tasks import send_web_activation_email_task
 
 
 class RegisterView(CreateView):
@@ -36,7 +38,22 @@ class RegisterView(CreateView):
     def form_valid(self, form):
         response = super().form_valid(form)
 
-        send_activation_email(self.object)
+        user = self.object
+
+        access = AccessToken.for_user(user)
+        token = str(access)
+
+        send_web_activation_email_task.apply_async(
+            args=[token, user.id],
+            expires=60,
+            retry=True,
+            retry_policy={
+                "max_retries": 3,
+                "interval_start": 1,
+                "interval_step": 2,
+                "interval_max": 10,
+            },
+        )
 
         messages.success(
             self.request,
@@ -137,9 +154,19 @@ class ResendActivationEmailView(FormView):
         user = User.objects.filter(email=form.cleaned_data["email"]).first()
 
         if user and not user.is_verified:
-            refresh = RefreshToken.for_user(user)
-            token = str(refresh.access_token)
-            send_web_activation_email(user, token)
+            access = AccessToken.for_user(user)
+            token = str(access)
+            send_web_activation_email_task.apply_async(
+                args=[token, user.id],
+                expires=60,
+                retry=True,
+                retry_policy={
+                    "max_retries": 3,
+                    "interval_start": 1,
+                    "interval_step": 2,
+                    "interval_max": 10,
+                },
+            )
 
         (
             messages.success(
