@@ -20,7 +20,6 @@ from accounts.views import (
     ActivationConfirmView,
 )
 
-
 User = get_user_model()
 
 
@@ -33,26 +32,17 @@ User = get_user_model()
 class TestRegisterView:
 
     def test_get(self, client):
-        response = client.get(
-            reverse("accounts:register")
-        )
+        response = client.get(reverse("accounts:register"))
 
         assert response.status_code == 200
         assert "form" in response.context
 
     def test_view_class(self, client):
-        response = client.get(
-            reverse("accounts:register")
-        )
+        response = client.get(reverse("accounts:register"))
 
-        assert (
-            response.resolver_match.func.view_class
-            is RegisterView
-        )
+        assert response.resolver_match.func.view_class is RegisterView
 
-    @patch(
-        "accounts.views.send_web_activation_email_task.apply_async"
-    )
+    @patch("accounts.views.send_web_activation_email_task.apply_async")
     def test_register_success(
         self,
         mock_apply_async,
@@ -70,9 +60,7 @@ class TestRegisterView:
         assert response.status_code == 302
         assert response.url == reverse("core:home")
 
-        user = User.objects.get(
-            email="newuser@example.com"
-        )
+        user = User.objects.get(email="newuser@example.com")
 
         assert user.is_verified is False
 
@@ -102,22 +90,15 @@ class TestRegisterView:
 class TestLoginView:
 
     def test_get(self, client):
-        response = client.get(
-            reverse("accounts:login")
-        )
+        response = client.get(reverse("accounts:login"))
 
         assert response.status_code == 200
         assert "form" in response.context
 
     def test_view_class(self, client):
-        response = client.get(
-            reverse("accounts:login")
-        )
+        response = client.get(reverse("accounts:login"))
 
-        assert (
-            response.resolver_match.func.view_class
-            is CustomLoginView
-        )
+        assert response.resolver_match.func.view_class is CustomLoginView
 
     def test_uses_custom_authentication_form(self):
         assert (
@@ -153,21 +134,14 @@ class TestLoginView:
 class TestLogoutConfirmView:
 
     def test_get(self, client):
-        response = client.get(
-            reverse("accounts:logout_confirm")
-        )
+        response = client.get(reverse("accounts:logout_confirm"))
 
         assert response.status_code == 200
 
     def test_view_class(self, client):
-        response = client.get(
-            reverse("accounts:logout_confirm")
-        )
+        response = client.get(reverse("accounts:logout_confirm"))
 
-        assert (
-            response.resolver_match.func.view_class
-            is LogoutConfirmView
-        )
+        assert response.resolver_match.func.view_class is LogoutConfirmView
 
 
 # ============================================================
@@ -179,21 +153,16 @@ class TestLogoutConfirmView:
 class TestPasswordResetView:
 
     def test_get(self, client):
-        response = client.get(
-            reverse("accounts:password_reset")
-        )
+        response = client.get(reverse("accounts:password_reset"))
 
         assert response.status_code == 200
         assert "form" in response.context
 
     def test_view_class(self, client):
-        response = client.get(
-            reverse("accounts:password_reset")
-        )
+        response = client.get(reverse("accounts:password_reset"))
 
         assert (
-            response.resolver_match.func.view_class
-            is CustomPasswordResetView
+            response.resolver_match.func.view_class is CustomPasswordResetView
         )
 
 
@@ -244,14 +213,10 @@ class TestPasswordResetConfirmView:
 class TestPasswordChangeView:
 
     def test_unauthenticated(self, client):
-        response = client.get(
-            reverse("accounts:password_change")
-        )
+        response = client.get(reverse("accounts:password_change"))
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_authenticated(
         self,
@@ -260,22 +225,15 @@ class TestPasswordChangeView:
     ):
         client.force_login(verified_user)
 
-        response = client.get(
-            reverse("accounts:password_change")
-        )
+        response = client.get(reverse("accounts:password_change"))
 
         assert response.status_code == 200
         assert "form" in response.context
 
     def test_view_class(self, client):
-        response = client.get(
-            reverse("accounts:password_change")
-        )
+        response = client.get(reverse("accounts:password_change"))
 
-        assert (
-            response.resolver_match.func.view_class
-            is PasswordChangeView
-        )
+        assert response.resolver_match.func.view_class is PasswordChangeView
 
 
 # ============================================================
@@ -287,14 +245,10 @@ class TestPasswordChangeView:
 class TestPasswordChangeConfirmView:
 
     def test_unauthenticated(self, client):
-        response = client.get(
-            reverse("accounts:password_change_done")
-        )
+        response = client.get(reverse("accounts:password_change_done"))
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_authenticated(
         self,
@@ -303,16 +257,12 @@ class TestPasswordChangeConfirmView:
     ):
         client.force_login(verified_user)
 
-        response = client.get(
-            reverse("accounts:password_change_done")
-        )
+        response = client.get(reverse("accounts:password_change_done"))
 
         assert response.status_code == 200
 
     def test_view_class(self, client):
-        response = client.get(
-            reverse("accounts:password_change_done")
-        )
+        response = client.get(reverse("accounts:password_change_done"))
 
         assert (
             response.resolver_match.func.view_class
@@ -343,9 +293,7 @@ class TestProfileView:
         response = client.get(url)
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_unverified_user(
         self,
@@ -383,10 +331,7 @@ class TestProfileView:
         response = client.get(url)
 
         assert response.status_code == 200
-        assert (
-            response.context["profile"]
-            == verified_user.profile
-        )
+        assert response.context["profile"] == verified_user.profile
 
     def test_other_user_profile(
         self,
@@ -423,10 +368,7 @@ class TestProfileView:
 
         response = client.get(url)
 
-        assert (
-            response.resolver_match.func.view_class
-            is ProfileView
-        )
+        assert response.resolver_match.func.view_class is ProfileView
 
 
 # ============================================================
@@ -452,9 +394,7 @@ class TestProfileUpdateView:
         response = client.get(url)
 
         assert response.status_code == 302
-        assert response.url.startswith(
-            reverse("accounts:login")
-        )
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_unverified_user(
         self,
@@ -494,10 +434,7 @@ class TestProfileUpdateView:
         assert response.status_code == 200
         assert "form" in response.context
 
-        assert (
-            response.context["form"].instance
-            == verified_user.profile
-        )
+        assert response.context["form"].instance == verified_user.profile
 
     def test_other_user_profile(
         self,
@@ -534,10 +471,7 @@ class TestProfileUpdateView:
 
         response = client.get(url)
 
-        assert (
-            response.resolver_match.func.view_class
-            is ProfileUpdateView
-        )
+        assert response.resolver_match.func.view_class is ProfileUpdateView
 
 
 # ============================================================
@@ -549,26 +483,20 @@ class TestProfileUpdateView:
 class TestResendActivationEmailView:
 
     def test_get(self, client):
-        response = client.get(
-            reverse("accounts:resend_activation")
-        )
+        response = client.get(reverse("accounts:resend_activation"))
 
         assert response.status_code == 200
         assert "form" in response.context
 
     def test_view_class(self, client):
-        response = client.get(
-            reverse("accounts:resend_activation")
-        )
+        response = client.get(reverse("accounts:resend_activation"))
 
         assert (
             response.resolver_match.func.view_class
             is ResendActivationEmailView
         )
 
-    @patch(
-        "accounts.views.send_web_activation_email_task.apply_async"
-    )
+    @patch("accounts.views.send_web_activation_email_task.apply_async")
     def test_unverified_user(
         self,
         mock_apply_async,
@@ -593,9 +521,7 @@ class TestResendActivationEmailView:
         assert call_kwargs["expires"] == 60
         assert call_kwargs["retry"] is True
 
-    @patch(
-        "accounts.views.send_web_activation_email_task.apply_async"
-    )
+    @patch("accounts.views.send_web_activation_email_task.apply_async")
     def test_verified_user(
         self,
         mock_apply_async,
@@ -614,9 +540,7 @@ class TestResendActivationEmailView:
 
         mock_apply_async.assert_not_called()
 
-    @patch(
-        "accounts.views.send_web_activation_email_task.apply_async"
-    )
+    @patch("accounts.views.send_web_activation_email_task.apply_async")
     def test_nonexistent_user(
         self,
         mock_apply_async,
@@ -653,10 +577,7 @@ class TestActivationConfirmView:
 
         response = client.get(url)
 
-        assert (
-            response.resolver_match.func.view_class
-            is ActivationConfirmView
-        )
+        assert response.resolver_match.func.view_class is ActivationConfirmView
 
     def test_invalid_token(self, client):
         url = reverse(
@@ -698,10 +619,7 @@ class TestActivationConfirmView:
             response = client.get(url)
 
         assert response.status_code == 200
-        assert (
-            response.context["status"]
-            == "already_verified"
-        )
+        assert response.context["status"] == "already_verified"
 
     def test_activate_unverified_user(
         self,
@@ -773,11 +691,8 @@ class TestActivationConfirmView:
         token = jwt.encode(
             {
                 "user_id": 1,
-                "exp": datetime.datetime.now(
-                    datetime.timezone.utc
-                ) - datetime.timedelta(
-                    seconds=10
-                ),
+                "exp": datetime.datetime.now(datetime.timezone.utc)
+                - datetime.timedelta(seconds=10),
             },
             "test-secret",
             algorithm="HS256",
