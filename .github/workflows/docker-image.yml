@@ -2,30 +2,99 @@ name: Django Test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
-  build:
-
+  test:
     runs-on: ubuntu-latest
 
+    environment: .env
+
     steps:
-    
-    - uses: actions/checkout@v4
-    - name: Create .env
-      run: |
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create .env
+        run: |
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          echo "DEBUG=1" >> .env
-          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
-          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+          echo "DEBUG=${{ vars.DEBUG }}" >> .env
+          echo "POSTGRES_DB=${{ vars.POSTGRES_DB }}" >> .env
+          echo "POSTGRES_USER=${{ vars.POSTGRES_USER }}" >> .env
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+          echo "POSTGRES_HOST=${{ vars.POSTGRES_HOST }}" >> .env
+          echo "POSTGRES_PORT=${{ vars.POSTGRES_PORT }}" >> .env
 
-          
-    - name: docker compose
-      run: docker compose up -d
-    - name: run test
-      run: docker compose exec web sh -c "flake8 . && pytest ."
+      - name: Check environment
+        run: |
+          echo "POSTGRES_HOST=${{ vars.POSTGRES_HOST }}"
+          echo "POSTGRES_PORT=${{ vars.POSTGRES_PORT }}"
+          grep -E '^(POSTGRES_HOST|POSTGRES_PORT|POSTGRES_DB|POSTGRES_USER)=' .env
 
+      - name: Start database
+        run: docker compose up -d db
+
+      - name: Start redis
+        run: docker compose up -d redis
+
+      - name: Database and Redis status
+        run: |
+          docker compose ps
+          docker compose logs db --tail=100
+          docker compose logs redis --tail=100
+
+      - name: Start web
+        run: docker compose up -d web
+
+      - name: Wait for web
+        run: sleep 10
+
+      - name: Web status
+        run: docker compose ps -a
+
+      - name: Web logs
+        run: docker compose logs web --tail=200
+
+      - name: Django check
+        run: |
+          docker compose exec -T web python manage.py check
+
+      - name: Collect tests
+        run: |
+          docker compose exec -T web pytest --collect-only -q
+
+      - name: Run flake8
+        run: |
+          docker compose exec -T web flake8 .
+
+      - name: Run tests
+        run: |
+          docker compose exec -T web pytest . -vv
+
+      - name: Failure diagnostics
+        if: failure()
+        run: |
+          echo "===== COMPOSE STATUS ====="
+          docker compose ps -a
+
+          echo "===== WEB LOGS ====="
+          docker compose logs web --tail=300
+
+          echo "===== DATABASE LOGS ====="
+          docker compose logs db --tail=100
+
+          echo "===== REDIS LOGS ====="
+          docker compose logs redis --tail=100
+
+          echo "===== DOCKER STATS ====="
+          docker stats --no-stream
+
+          echo "===== WEB STATE ====="
+          docker inspect todoapp_web \
+            --format 'Status={{.State.Status}} ExitCode={{.State.ExitCode}} OOMKilled={{.State.OOMKilled}} Error={{.State.Error}}'
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down
