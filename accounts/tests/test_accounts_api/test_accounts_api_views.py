@@ -11,8 +11,8 @@ from accounts.models import User
 @pytest.mark.django_db
 class TestRegistrationApiView:
 
-    @patch("accounts.api.v1.views.send_activation_email")
-    def test_registration(self, mock_send_activation_email, api_client):
+    @patch("accounts.api.v1.views.send_activation_email_task.apply_async")
+    def test_registration(self, mock_start, api_client):
         response = api_client.post(
             reverse("accounts:accounts-api-v1:registration"),
             {
@@ -33,12 +33,22 @@ class TestRegistrationApiView:
         assert user.is_verified is False
         assert user.check_password("TestPassword123")
 
-        mock_send_activation_email.assert_called_once()
+        mock_start.assert_called_once()
 
-        called_user, called_token = mock_send_activation_email.call_args.args
+        called_args = mock_start.call_args.kwargs["args"]
 
-        assert called_user == user
-        assert isinstance(called_token, str)
+        assert called_args[1] == user.id
+        assert isinstance(called_args[0], str)
+        called_kwargs = mock_start.call_args.kwargs
+
+        assert called_kwargs["expires"] == 60
+        assert called_kwargs["retry"] is True
+        assert called_kwargs["retry_policy"] == {
+            "max_retries": 3,
+            "interval_start": 1,
+            "interval_step": 2,
+            "interval_max": 10,
+        }
 
     def test_registration_invalid_data(self, api_client):
         response = api_client.post(
@@ -308,10 +318,10 @@ class TestChangePasswordView:
 @pytest.mark.django_db
 class TestResetPasswordEmailView:
 
-    @patch("accounts.api.v1.views.send_reset_password_email")
+    @patch("accounts.api.v1.views.send_reset_password_email_task.apply_async")
     def test_valid_email(
         self,
-        mock_send_reset_password_email,
+        mock_start,
         api_client,
         user,
     ):
@@ -321,16 +331,19 @@ class TestResetPasswordEmailView:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == {"email": "Successfully send"}
+        assert response.data == {
+            "detail": (
+                "If your account exists, "
+                "an email has been sent successfully"
+            )
+        }
 
-        mock_send_reset_password_email.assert_called_once()
+        mock_start.assert_called_once()
 
-        called_user, called_token = (
-            mock_send_reset_password_email.call_args.args
-        )
+        called_args = mock_start.call_args.kwargs["args"]
 
-        assert called_user == user
-        assert isinstance(called_token, str)
+        assert called_args[1] == user.id
+        assert isinstance(called_args[0], str)
 
     def test_nonexistent_email(self, api_client):
         response = api_client.post(
@@ -338,8 +351,7 @@ class TestResetPasswordEmailView:
             {"email": "notfound@example.com"},
         )
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "email" in response.data
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db
@@ -457,10 +469,10 @@ class TestActivationView:
 @pytest.mark.django_db
 class TestResendActivationEmail:
 
-    @patch("accounts.api.v1.views.send_activation_email")
+    @patch("accounts.api.v1.views.send_activation_email_task.apply_async")
     def test_resend_activation_email(
         self,
-        mock_send_activation_email,
+        mock_start,
         api_client,
         user,
     ):
@@ -472,25 +484,63 @@ class TestResendActivationEmail:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == {"detail": "email has been sent successfully"}
 
-        mock_send_activation_email.assert_called_once()
+        assert response.data == {
+            "detail": "If the account exists and is not verified, "
+            "an activation email has been sent."
+        }
 
-        called_user, called_token = mock_send_activation_email.call_args.args
+        mock_start.assert_called_once()
 
-        assert called_user == user
-        assert isinstance(called_token, str)
+        called_args = mock_start.call_args.kwargs["args"]
 
-    def test_unauthenticated(self, api_client, user):
+        assert called_args[1] == user.id
+        assert isinstance(called_args[0], str)
+
+    def test_unauthenticated(
+        self,
+        api_client,
+        user,
+    ):
         response = api_client.post(
             reverse("accounts:accounts-api-v1:activation_resend"),
             {"email": user.email},
         )
 
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
 
+        assert response.data == {
+            "detail": "If the account exists and is not verified, "
+            "an activation email has been sent."
+        }
+
+    @patch("accounts.api.v1.views.send_activation_email_task.apply_async")
+    def test_verified_user(
+        self,
+        mock_start,
+        api_client,
+        verified_user,
+    ):
+        api_client.force_authenticate(user=verified_user)
+
+        response = api_client.post(
+            reverse("accounts:accounts-api-v1:activation_resend"),
+            {"email": verified_user.email},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        assert response.data == {
+            "detail": "If the account exists and is not verified, "
+            "an activation email has been sent."
+        }
+
+        mock_start.assert_not_called()
+
+    @patch("accounts.api.v1.views.send_activation_email_task.apply_async")
     def test_nonexistent_user(
         self,
+        mock_start,
         api_client,
         user,
     ):
@@ -501,5 +551,11 @@ class TestResendActivationEmail:
             {"email": "notfound@example.com"},
         )
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "email" in response.data
+        assert response.status_code == status.HTTP_200_OK
+
+        assert response.data == {
+            "detail": "If the account exists and is not verified, "
+            "an activation email has been sent."
+        }
+
+        mock_start.assert_not_called()

@@ -11,7 +11,12 @@ markdown
 drf-yasg
 djangorestframework-simplejwt
 django-mail-templated
-pytest
+Faker
+celery
+redis
+django-celery-beat
+django-redis
+gunicorn
 pytest-django
-black
 flake8
+black 

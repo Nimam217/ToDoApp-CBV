@@ -41,6 +41,15 @@ def verified_user(db):
 
 
 @pytest.fixture
+def verified_another_user(db):
+    return User.objects.create_user(
+        email="verified-another@example.com",
+        password="TestPassword123",
+        is_verified=True,
+    )
+
+
+@pytest.fixture
 def staff_user(db):
     return User.objects.create_user(
         email="staff@example.com",
@@ -72,8 +81,13 @@ def another_profile(another_user):
     return another_user.profile
 
 
+@pytest.fixture
+def verified_profile(verified_user):
+    return verified_user.profile
+
+
 # =========================
-# Tasks
+# Tasks - normal user
 # =========================
 
 
@@ -108,6 +122,44 @@ def another_task(db, another_user):
 
 
 # =========================
+# Tasks - verified user
+# =========================
+
+
+@pytest.fixture
+def verified_task(db, verified_user):
+    return Task.objects.create(
+        title="Test Task",
+        description="Test task description",
+        user=verified_user,
+        done=False,
+    )
+
+
+@pytest.fixture
+def verified_completed_task(db, verified_user):
+    return Task.objects.create(
+        title="Completed Task",
+        description="Completed task description",
+        user=verified_user,
+        done=True,
+    )
+
+
+@pytest.fixture
+def verified_another_task(
+    db,
+    verified_another_user,
+):
+    return Task.objects.create(
+        title="Another Task",
+        description="Another task description",
+        user=verified_another_user,
+        done=False,
+    )
+
+
+# =========================
 # Django RequestFactory
 # =========================
 
@@ -120,14 +172,19 @@ def request_factory():
 @pytest.fixture
 def list_request(request_factory):
     request = request_factory.get("/task/api/v1/")
+
     request.parser_context = {"kwargs": {}}
 
     return request
 
 
 @pytest.fixture
-def detail_request(request_factory, task):
+def detail_request(
+    request_factory,
+    task,
+):
     request = request_factory.get(f"/task/api/v1/{task.pk}/")
+
     request.parser_context = {
         "kwargs": {
             "pk": task.pk,

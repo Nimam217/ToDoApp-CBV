@@ -2,8 +2,7 @@ import pytest
 
 from django.urls import reverse
 
-
-from ...models import Task
+from task.models import Task
 
 
 @pytest.mark.django_db
@@ -17,8 +16,12 @@ class TestDashboardView:
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_authenticated(self, client, user):
-        client.force_login(user)
+    def test_authenticated(
+        self,
+        client,
+        verified_user,
+    ):
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -28,8 +31,14 @@ class TestDashboardView:
         assert response.context["status"] == "all"
         assert response.context["query"] == ""
 
-    def test_all_tasks(self, client, user, task, completed_task):
-        client.force_login(user)
+    def test_all_tasks(
+        self,
+        client,
+        verified_user,
+        verified_task,
+        verified_completed_task,
+    ):
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -41,17 +50,18 @@ class TestDashboardView:
         assert response.context["pending_count"] == 1
         assert response.context["completed_count"] == 1
 
-        assert task in response.context["pending_list"]
-        assert completed_task in response.context["completed_list"]
+        assert verified_task in response.context["pending_list"]
+
+        assert verified_completed_task in response.context["completed_list"]
 
     def test_only_pending_tasks(
         self,
         client,
-        user,
-        task,
-        completed_task,
+        verified_user,
+        verified_task,
+        verified_completed_task,
     ):
-        client.force_login(user)
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -64,19 +74,21 @@ class TestDashboardView:
         assert response.context["status"] == "pending"
 
         assert response.context["pending_list"].count() == 1
+
         assert response.context["completed_list"].count() == 0
 
-        assert task in response.context["pending_list"]
-        assert completed_task not in response.context["pending_list"]
+        assert verified_task in response.context["pending_list"]
+
+        assert verified_completed_task not in response.context["pending_list"]
 
     def test_only_completed_tasks(
         self,
         client,
-        user,
-        task,
-        completed_task,
+        verified_user,
+        verified_task,
+        verified_completed_task,
     ):
-        client.force_login(user)
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -89,13 +101,21 @@ class TestDashboardView:
         assert response.context["status"] == "completed"
 
         assert response.context["pending_list"].count() == 0
+
         assert response.context["completed_list"].count() == 1
 
-        assert completed_task in response.context["completed_list"]
-        assert task not in response.context["completed_list"]
+        assert verified_completed_task in response.context["completed_list"]
 
-    def test_search(self, client, user, task, completed_task):
-        client.force_login(user)
+        assert verified_task not in response.context["completed_list"]
+
+    def test_search(
+        self,
+        client,
+        verified_user,
+        verified_task,
+        verified_completed_task,
+    ):
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -107,16 +127,19 @@ class TestDashboardView:
         assert response.status_code == 200
         assert response.context["query"] == "Test Task"
 
-        assert task in response.context["pending_list"]
-        assert completed_task not in response.context["completed_list"]
+        assert verified_task in response.context["pending_list"]
+
+        assert (
+            verified_completed_task not in response.context["completed_list"]
+        )
 
     def test_search_case_insensitive(
         self,
         client,
-        user,
-        task,
+        verified_user,
+        verified_task,
     ):
-        client.force_login(user)
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -126,14 +149,15 @@ class TestDashboardView:
         )
 
         assert response.status_code == 200
-        assert task in response.context["pending_list"]
+
+        assert verified_task in response.context["pending_list"]
 
     def test_search_with_no_result(
         self,
         client,
-        user,
+        verified_user,
     ):
-        client.force_login(user)
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -146,16 +170,17 @@ class TestDashboardView:
         assert response.context["query"] == "does-not-exist"
 
         assert response.context["pending_list"].count() == 0
+
         assert response.context["completed_list"].count() == 0
 
     def test_user_can_only_see_own_tasks(
         self,
         client,
-        user,
-        task,
+        verified_user,
+        verified_task,
         another_task,
     ):
-        client.force_login(user)
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -163,7 +188,8 @@ class TestDashboardView:
 
         assert response.status_code == 200
 
-        assert task in response.context["pending_list"]
+        assert verified_task in response.context["pending_list"]
+
         assert another_task not in response.context["pending_list"]
 
         assert response.context["total_tasks"] == 1
@@ -171,10 +197,10 @@ class TestDashboardView:
     def test_search_strips_whitespace(
         self,
         client,
-        user,
-        task,
+        verified_user,
+        verified_task,
     ):
-        client.force_login(user)
+        client.force_login(verified_user)
 
         url = reverse("task:dashboard")
 
@@ -185,13 +211,18 @@ class TestDashboardView:
 
         assert response.status_code == 200
         assert response.context["query"] == "Test Task"
-        assert task in response.context["pending_list"]
+
+        assert verified_task in response.context["pending_list"]
 
 
 @pytest.mark.django_db
 class TestTaskDetailView:
 
-    def test_unauthenticated(self, client, task):
+    def test_unauthenticated(
+        self,
+        client,
+        task,
+    ):
         url = reverse(
             "task:detail",
             kwargs={"pk": task.pk},
@@ -202,7 +233,12 @@ class TestTaskDetailView:
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_owner(self, client, user, task):
+    def test_owner(
+        self,
+        client,
+        user,
+        task,
+    ):
         client.force_login(user)
 
         url = reverse(
@@ -244,7 +280,11 @@ class TestTaskCreateView:
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_get(self, client, user):
+    def test_get(
+        self,
+        client,
+        user,
+    ):
         client.force_login(user)
 
         url = reverse("task:create")
@@ -254,7 +294,11 @@ class TestTaskCreateView:
         assert response.status_code == 200
         assert "form" in response.context
 
-    def test_create_task(self, client, user):
+    def test_create_task(
+        self,
+        client,
+        user,
+    ):
         client.force_login(user)
 
         url = reverse("task:create")
@@ -280,7 +324,11 @@ class TestTaskCreateView:
 @pytest.mark.django_db
 class TestTaskUpdateView:
 
-    def test_unauthenticated(self, client, task):
+    def test_unauthenticated(
+        self,
+        client,
+        task,
+    ):
         url = reverse(
             "task:update",
             kwargs={"pk": task.pk},
@@ -291,7 +339,12 @@ class TestTaskUpdateView:
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_owner(self, client, user, task):
+    def test_owner(
+        self,
+        client,
+        user,
+        task,
+    ):
         client.force_login(user)
 
         url = reverse(
@@ -304,7 +357,12 @@ class TestTaskUpdateView:
         assert response.status_code == 200
         assert response.context["form"].instance == task
 
-    def test_update_task(self, client, user, task):
+    def test_update_task(
+        self,
+        client,
+        user,
+        task,
+    ):
         client.force_login(user)
 
         url = reverse(
@@ -350,7 +408,11 @@ class TestTaskUpdateView:
 @pytest.mark.django_db
 class TestTaskDeleteView:
 
-    def test_unauthenticated(self, client, task):
+    def test_unauthenticated(
+        self,
+        client,
+        task,
+    ):
         url = reverse(
             "task:delete",
             kwargs={"pk": task.pk},
@@ -361,7 +423,12 @@ class TestTaskDeleteView:
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_owner(self, client, user, task):
+    def test_owner(
+        self,
+        client,
+        user,
+        task,
+    ):
         client.force_login(user)
 
         url = reverse(
@@ -374,7 +441,12 @@ class TestTaskDeleteView:
         assert response.status_code == 200
         assert response.context["object"] == task
 
-    def test_delete_task(self, client, user, task):
+    def test_delete_task(
+        self,
+        client,
+        user,
+        task,
+    ):
         client.force_login(user)
 
         url = reverse(

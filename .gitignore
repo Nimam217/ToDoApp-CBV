@@ -1,4 +1,4 @@
-.env
+.env*
 .env.prod
 __pycache__/
 *.pyc
@@ -9,3 +9,4 @@ postgres_data/
 .idea/
 venv/
 .venv
+staticfiles/

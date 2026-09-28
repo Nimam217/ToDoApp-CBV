@@ -1,10 +1,38 @@
 services:
 
+
+  redis:
+    image: redis
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+  celery_worker:
+    build: .
+    command: celery -A ToDoApp worker -l INFO
+    depends_on:
+      - web
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+
+  celery_beat:
+    build: .
+    command: celery -A ToDoApp beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - web
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - .:/app
   db:
     image: postgres:15
     env_file:
       - .env
-
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -67,7 +95,19 @@ services:
       - ServerOptions__HostName=smtp4dev
     env_file:
       - .env
+  master:
+    image: locustio/locust
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./core/locust:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --master -H http://web:8000
 
+  worker:
+    image: locustio/locust
+    volumes:
+      - ./core/locust:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --worker --master-host master
 volumes:
   postgres_data:
   smtp4dev-data:
