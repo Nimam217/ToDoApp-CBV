@@ -1,9 +1,27 @@
+import jwt
 import pytest
 
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 
+from accounts.views import (
+    RegisterView,
+    CustomLoginView,
+    LogoutConfirmView,
+    CustomPasswordResetView,
+    CustomPasswordResetConfirmView,
+    PasswordChangeView,
+    PasswordChangeConfirmView,
+    ProfileView,
+    ProfileUpdateView,
+    ResendActivationEmailView,
+    ActivationConfirmView,
+)
 
-from task.models import Task
+User = get_user_model()
+
 
 # ============================================================
 # Register
@@ -11,62 +29,68 @@ from task.models import Task
 
 
 @pytest.mark.django_db
-class TestDashboardView:
+class TestRegisterView:
 
-    def test_unauthenticated(self, client):
-        url = reverse("task:dashboard")
-
-        response = client.get(url)
-
-        assert response.status_code == 302
-        assert response.url.startswith(reverse("accounts:login"))
-
-    def test_authenticated(self, client, user):
-        client.force_login(user)
-
-        url = reverse("task:dashboard")
-
-        response = client.get(url)
+    def test_get(self, client):
+        response = client.get(reverse("accounts:register"))
 
         assert response.status_code == 200
         assert "form" in response.context
 
-    def test_all_tasks(self, client, user, task, completed_task):
-        client.force_login(user)
+    def test_view_class(self, client):
+        response = client.get(reverse("accounts:register"))
 
         assert response.resolver_match.func.view_class is RegisterView
+
+    @patch("accounts.views.send_web_activation_email_task.apply_async")
+    def test_register_success(
+        self,
+        mock_apply_async,
+        client,
+    ):
+        response = client.post(
+            reverse("accounts:register"),
+            {
+                "email": "newuser@example.com",
+                "password1": "StrongPassword123!",
+                "password2": "StrongPassword123!",
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == reverse("core:home")
+
+        user = User.objects.get(email="newuser@example.com")
+
+        assert user.is_verified is False
+
+        mock_apply_async.assert_called_once()
+
+        call_kwargs = mock_apply_async.call_args.kwargs
+
+        assert call_kwargs["expires"] == 60
+        assert call_kwargs["retry"] is True
+
+        assert call_kwargs["args"][1] == user.id
+
+        assert call_kwargs["retry_policy"] == {
+            "max_retries": 3,
+            "interval_start": 1,
+            "interval_step": 2,
+            "interval_max": 10,
+        }
 
 
 # ============================================================
 # Login
 # ============================================================
 
-        response = client.get(url)
 
-        assert response.status_code == 200
+@pytest.mark.django_db
+class TestLoginView:
 
-        assert response.context["total_tasks"] == 2
-        assert response.context["pending_count"] == 1
-        assert response.context["completed_count"] == 1
-
-        assert task in response.context["pending_list"]
-        assert completed_task in response.context["completed_list"]
-
-    def test_only_pending_tasks(
-        self,
-        client,
-        user,
-        task,
-        completed_task,
-    ):
-        client.force_login(user)
-
-        url = reverse("task:dashboard")
-
-        response = client.get(
-            url,
-            {"status": "pending"},
-        )
+    def test_get(self, client):
+        response = client.get(reverse("accounts:login"))
 
         assert response.status_code == 200
         assert "form" in response.context
@@ -82,33 +106,37 @@ class TestDashboardView:
             == "CustomAuthenticationForm"
         )
 
+    def test_login_success(
+        self,
+        client,
+        verified_user,
+    ):
+        response = client.post(
+            reverse("accounts:login"),
+            {
+                "username": verified_user.email,
+                "password": "TestPassword123",
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == reverse("core:home")
+
+        assert "_auth_user_id" in client.session
+
 
 # ============================================================
 # Logout
 # ============================================================
 
 
-        assert task in response.context["pending_list"]
-        assert completed_task not in response.context["pending_list"]
+@pytest.mark.django_db
+class TestLogoutConfirmView:
 
-    def test_only_completed_tasks(
-        self,
-        client,
-        user,
-        task,
-        completed_task,
-    ):
-        client.force_login(user)
-
-        url = reverse("task:dashboard")
-
-        response = client.get(
-            url,
-            {"status": "completed"},
-        )
+    def test_get(self, client):
+        response = client.get(reverse("accounts:logout_confirm"))
 
         assert response.status_code == 200
-        assert response.context["status"] == "completed"
 
     def test_view_class(self, client):
         response = client.get(reverse("accounts:logout_confirm"))
@@ -121,21 +149,14 @@ class TestDashboardView:
 # ============================================================
 
 
-        assert completed_task in response.context["completed_list"]
-        assert task not in response.context["completed_list"]
+@pytest.mark.django_db
+class TestPasswordResetView:
 
-    def test_search(self, client, user, task, completed_task):
-        client.force_login(user)
-
-        url = reverse("task:dashboard")
-
-        response = client.get(
-            url,
-            {"q": "Test Task"},
-        )
+    def test_get(self, client):
+        response = client.get(reverse("accounts:password_reset"))
 
         assert response.status_code == 200
-        assert response.context["query"] == "Test Task"
+        assert "form" in response.context
 
     def test_view_class(self, client):
         response = client.get(reverse("accounts:password_reset"))
@@ -150,54 +171,17 @@ class TestDashboardView:
 # ============================================================
 
 
-    def test_search_case_insensitive(
-        self,
-        client,
-        user,
-        task,
-    ):
-        client.force_login(user)
+@pytest.mark.django_db
+class TestPasswordResetConfirmView:
 
-        url = reverse("task:dashboard")
-
-        response = client.get(
-            url,
-            {"q": "test task"},
+    def test_invalid_token(self, client):
+        url = reverse(
+            "accounts:password_reset_confirm",
+            kwargs={
+                "uidb64": "invalid",
+                "token": "invalid-token",
+            },
         )
-
-        assert response.status_code == 200
-        assert task in response.context["pending_list"]
-
-    def test_search_with_no_result(
-        self,
-        client,
-        user,
-    ):
-        client.force_login(user)
-
-        url = reverse("task:dashboard")
-
-        response = client.get(
-            url,
-            {"q": "does-not-exist"},
-        )
-
-        assert response.status_code == 200
-        assert response.context["query"] == "does-not-exist"
-
-        assert response.context["pending_list"].count() == 0
-        assert response.context["completed_list"].count() == 0
-
-    def test_user_can_only_see_own_tasks(
-        self,
-        client,
-        user,
-        task,
-        another_task,
-    ):
-        client.force_login(user)
-
-        url = reverse("task:dashboard")
 
         response = client.get(url)
 
@@ -226,28 +210,22 @@ class TestDashboardView:
 
 
 @pytest.mark.django_db
-class TestTaskDetailView:
+class TestPasswordChangeView:
 
-    def test_unauthenticated(self, client, task):
-        url = reverse(
-            "task:detail",
-            kwargs={"pk": task.pk},
-        )
-
-        response = client.get(url)
+    def test_unauthenticated(self, client):
+        response = client.get(reverse("accounts:password_change"))
 
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_owner(self, client, user, task):
-        client.force_login(user)
+    def test_authenticated(
+        self,
+        client,
+        verified_user,
+    ):
+        client.force_login(verified_user)
 
-        url = reverse(
-            "task:detail",
-            kwargs={"pk": task.pk},
-        )
-
-        response = client.get(url)
+        response = client.get(reverse("accounts:password_change"))
 
         assert response.status_code == 200
         assert "form" in response.context
@@ -264,47 +242,24 @@ class TestTaskDetailView:
 
 
 @pytest.mark.django_db
-class TestTaskCreateView:
+class TestPasswordChangeConfirmView:
 
     def test_unauthenticated(self, client):
-        url = reverse("task:create")
-
-        response = client.get(url)
+        response = client.get(reverse("accounts:password_change_done"))
 
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_get(self, client, user):
-        client.force_login(user)
+    def test_authenticated(
+        self,
+        client,
+        verified_user,
+    ):
+        client.force_login(verified_user)
 
-        url = reverse("task:create")
-
-        response = client.get(url)
+        response = client.get(reverse("accounts:password_change_done"))
 
         assert response.status_code == 200
-        assert "form" in response.context
-
-    def test_create_task(self, client, user):
-        client.force_login(user)
-
-        url = reverse("task:create")
-
-        response = client.post(
-            url,
-            {
-                "title": "New Task",
-                "description": "New task description",
-            },
-        )
-
-        assert response.status_code == 302
-        assert response.url == reverse("task:dashboard")
-
-        created_task = Task.objects.get(title="New Task")
-
-        assert created_task.user == user
-        assert created_task.description == "New task description"
-        assert created_task.done is False
 
     def test_view_class(self, client):
         response = client.get(reverse("accounts:password_change_done"))
@@ -321,12 +276,18 @@ class TestTaskCreateView:
 
 
 @pytest.mark.django_db
-class TestTaskUpdateView:
+class TestProfileView:
 
-    def test_unauthenticated(self, client, task):
+    def test_unauthenticated(
+        self,
+        client,
+        user,
+    ):
         url = reverse(
-            "task:update",
-            kwargs={"pk": task.pk},
+            "accounts:profile",
+            kwargs={
+                "pk": user.profile.pk,
+            },
         )
 
         response = client.get(url)
@@ -334,39 +295,43 @@ class TestTaskUpdateView:
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_owner(self, client, user, task):
+    def test_unverified_user(
+        self,
+        client,
+        user,
+    ):
         client.force_login(user)
 
         url = reverse(
-            "task:update",
-            kwargs={"pk": task.pk},
+            "accounts:profile",
+            kwargs={
+                "pk": user.profile.pk,
+            },
+        )
+
+        response = client.get(url)
+
+        assert response.status_code == 302
+        assert response.url == reverse("core:home")
+
+    def test_authenticated_owner(
+        self,
+        client,
+        verified_user,
+    ):
+        client.force_login(verified_user)
+
+        url = reverse(
+            "accounts:profile",
+            kwargs={
+                "pk": verified_user.profile.pk,
+            },
         )
 
         response = client.get(url)
 
         assert response.status_code == 200
-        assert response.context["form"].instance == task
-
-    def test_update_task(self, client, user, task):
-        client.force_login(user)
-
-        url = reverse(
-            "task:update",
-            kwargs={"pk": task.pk},
-        )
-
-        response = client.post(
-            url,
-            {
-                "title": "Updated Task",
-                "description": "Updated description",
-            },
-        )
-
-        assert response.status_code == 302
-        assert response.url == reverse("task:dashboard")
-
-        task.refresh_from_db()
+        assert response.context["profile"] == verified_user.profile
 
     def test_other_user_profile(
         self,
@@ -377,20 +342,28 @@ class TestTaskUpdateView:
         client.force_login(verified_user)
 
         url = reverse(
-            "task:update",
-            kwargs={"pk": task.pk},
+            "accounts:profile",
+            kwargs={
+                "pk": another_user.profile.pk,
+            },
         )
 
         response = client.get(url)
 
         assert response.status_code == 404
 
-    def test_view_class(self, client, verified_user):
+    def test_view_class(
+        self,
+        client,
+        verified_user,
+    ):
         client.force_login(verified_user)
 
         url = reverse(
             "accounts:profile",
-            kwargs={"pk": verified_user.profile.pk},
+            kwargs={
+                "pk": verified_user.profile.pk,
+            },
         )
 
         response = client.get(url)
@@ -404,12 +377,18 @@ class TestTaskUpdateView:
 
 
 @pytest.mark.django_db
-class TestTaskDeleteView:
+class TestProfileUpdateView:
 
-    def test_unauthenticated(self, client, task):
+    def test_unauthenticated(
+        self,
+        client,
+        user,
+    ):
         url = reverse(
-            "task:delete",
-            kwargs={"pk": task.pk},
+            "accounts:profile_edit",
+            kwargs={
+                "pk": user.profile.pk,
+            },
         )
 
         response = client.get(url)
@@ -417,18 +396,44 @@ class TestTaskDeleteView:
         assert response.status_code == 302
         assert response.url.startswith(reverse("accounts:login"))
 
-    def test_owner(self, client, user, task):
+    def test_unverified_user(
+        self,
+        client,
+        user,
+    ):
         client.force_login(user)
 
         url = reverse(
-            "task:delete",
-            kwargs={"pk": task.pk},
+            "accounts:profile_edit",
+            kwargs={
+                "pk": user.profile.pk,
+            },
+        )
+
+        response = client.get(url)
+
+        assert response.status_code == 302
+        assert response.url == reverse("core:home")
+
+    def test_authenticated_owner(
+        self,
+        client,
+        verified_user,
+    ):
+        client.force_login(verified_user)
+
+        url = reverse(
+            "accounts:profile_edit",
+            kwargs={
+                "pk": verified_user.profile.pk,
+            },
         )
 
         response = client.get(url)
 
         assert response.status_code == 200
         assert "form" in response.context
+
         assert response.context["form"].instance == verified_user.profile
 
     def test_other_user_profile(
@@ -440,22 +445,271 @@ class TestTaskDeleteView:
         client.force_login(verified_user)
 
         url = reverse(
-            "task:delete",
-            kwargs={"pk": task.pk},
+            "accounts:profile_edit",
+            kwargs={
+                "pk": another_user.profile.pk,
+            },
         )
 
         response = client.get(url)
 
         assert response.status_code == 404
 
-    def test_view_class(self, client, verified_user):
+    def test_view_class(
+        self,
+        client,
+        verified_user,
+    ):
         client.force_login(verified_user)
 
         url = reverse(
             "accounts:profile_edit",
-            kwargs={"pk": verified_user.profile.pk},
+            kwargs={
+                "pk": verified_user.profile.pk,
+            },
         )
 
         response = client.get(url)
 
         assert response.resolver_match.func.view_class is ProfileUpdateView
+
+
+# ============================================================
+# Resend Activation Email
+# ============================================================
+
+
+@pytest.mark.django_db
+class TestResendActivationEmailView:
+
+    def test_get(self, client):
+        response = client.get(reverse("accounts:resend_activation"))
+
+        assert response.status_code == 200
+        assert "form" in response.context
+
+    def test_view_class(self, client):
+        response = client.get(reverse("accounts:resend_activation"))
+
+        assert (
+            response.resolver_match.func.view_class
+            is ResendActivationEmailView
+        )
+
+    @patch("accounts.views.send_web_activation_email_task.apply_async")
+    def test_unverified_user(
+        self,
+        mock_apply_async,
+        client,
+        user,
+    ):
+        response = client.post(
+            reverse("accounts:resend_activation"),
+            {
+                "email": user.email,
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == reverse("accounts:login")
+
+        mock_apply_async.assert_called_once()
+
+        call_kwargs = mock_apply_async.call_args.kwargs
+
+        assert call_kwargs["args"][1] == user.id
+        assert call_kwargs["expires"] == 60
+        assert call_kwargs["retry"] is True
+
+    @patch("accounts.views.send_web_activation_email_task.apply_async")
+    def test_verified_user(
+        self,
+        mock_apply_async,
+        client,
+        verified_user,
+    ):
+        response = client.post(
+            reverse("accounts:resend_activation"),
+            {
+                "email": verified_user.email,
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == reverse("accounts:login")
+
+        mock_apply_async.assert_not_called()
+
+    @patch("accounts.views.send_web_activation_email_task.apply_async")
+    def test_nonexistent_user(
+        self,
+        mock_apply_async,
+        client,
+    ):
+        response = client.post(
+            reverse("accounts:resend_activation"),
+            {
+                "email": "doesnotexist@example.com",
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == reverse("accounts:login")
+
+        mock_apply_async.assert_not_called()
+
+
+# ============================================================
+# Activation Confirm
+# ============================================================
+
+
+@pytest.mark.django_db
+class TestActivationConfirmView:
+
+    def test_view_class(self, client):
+        url = reverse(
+            "accounts:activation_confirm",
+            kwargs={
+                "token": "invalid-token",
+            },
+        )
+
+        response = client.get(url)
+
+        assert response.resolver_match.func.view_class is ActivationConfirmView
+
+    def test_invalid_token(self, client):
+        url = reverse(
+            "accounts:activation_confirm",
+            kwargs={
+                "token": "invalid-token",
+            },
+        )
+
+        response = client.get(url)
+
+        assert response.status_code == 200
+        assert response.context["status"] == "invalid"
+
+    def test_already_verified_user(
+        self,
+        client,
+        verified_user,
+    ):
+        token = jwt.encode(
+            {
+                "user_id": verified_user.id,
+            },
+            "test-secret",
+            algorithm="HS256",
+        )
+
+        with patch(
+            "accounts.views.settings.SECRET_KEY",
+            "test-secret",
+        ):
+            url = reverse(
+                "accounts:activation_confirm",
+                kwargs={
+                    "token": token,
+                },
+            )
+
+            response = client.get(url)
+
+        assert response.status_code == 200
+        assert response.context["status"] == "already_verified"
+
+    def test_activate_unverified_user(
+        self,
+        client,
+        user,
+    ):
+        token = jwt.encode(
+            {
+                "user_id": user.id,
+            },
+            "test-secret",
+            algorithm="HS256",
+        )
+
+        with patch(
+            "accounts.views.settings.SECRET_KEY",
+            "test-secret",
+        ):
+            url = reverse(
+                "accounts:activation_confirm",
+                kwargs={
+                    "token": token,
+                },
+            )
+
+            response = client.get(url)
+
+        assert response.status_code == 200
+        assert response.context["status"] == "success"
+
+        user.refresh_from_db()
+
+        assert user.is_verified is True
+
+    def test_nonexistent_user(
+        self,
+        client,
+    ):
+        token = jwt.encode(
+            {
+                "user_id": 999999,
+            },
+            "test-secret",
+            algorithm="HS256",
+        )
+
+        with patch(
+            "accounts.views.settings.SECRET_KEY",
+            "test-secret",
+        ):
+            url = reverse(
+                "accounts:activation_confirm",
+                kwargs={
+                    "token": token,
+                },
+            )
+
+            response = client.get(url)
+
+        assert response.status_code == 200
+        assert response.context["status"] == "invalid"
+
+    def test_expired_token(
+        self,
+        client,
+    ):
+        import datetime
+
+        token = jwt.encode(
+            {
+                "user_id": 1,
+                "exp": datetime.datetime.now(datetime.timezone.utc)
+                - datetime.timedelta(seconds=10),
+            },
+            "test-secret",
+            algorithm="HS256",
+        )
+
+        with patch(
+            "accounts.views.settings.SECRET_KEY",
+            "test-secret",
+        ):
+            url = reverse(
+                "accounts:activation_confirm",
+                kwargs={
+                    "token": token,
+                },
+            )
+
+            response = client.get(url)
+
+        assert response.status_code == 200
+        assert response.context["status"] == "expired"
