@@ -1,6 +1,5 @@
 import pytest
 from django.urls import reverse
-from django.test import RequestFactory
 
 from accounts.views import (
     RegisterView,
@@ -14,6 +13,10 @@ from accounts.views import (
     ProfileUpdateView,
 )
 
+# ============================================================
+# Register
+# ============================================================
+
 
 @pytest.mark.django_db
 class TestRegisterView:
@@ -22,14 +25,17 @@ class TestRegisterView:
         response = client.get(reverse("accounts:register"))
 
         assert response.status_code == 200
-        assert isinstance(response.context["form"], object)
+        assert "form" in response.context
 
     def test_view_class(self, client):
         response = client.get(reverse("accounts:register"))
 
-        assert isinstance(
-        response.resolver_match.func.view_class(),
-        RegisterView)
+        assert response.resolver_match.func.view_class is RegisterView
+
+
+# ============================================================
+# Login
+# ============================================================
 
 
 @pytest.mark.django_db
@@ -39,10 +45,24 @@ class TestLoginView:
         response = client.get(reverse("accounts:login"))
 
         assert response.status_code == 200
+        assert "form" in response.context
+
+    def test_view_class(self, client):
+        response = client.get(reverse("accounts:login"))
+
+        assert response.resolver_match.func.view_class is CustomLoginView
 
     def test_uses_custom_authentication_form(self):
-        assert CustomLoginView.
-        authentication_form.__name__=="CustomAuthenticationForm"
+        assert (
+            CustomLoginView.authentication_form.__name__
+            == "CustomAuthenticationForm"
+        )
+
+
+# ============================================================
+# Logout
+# ============================================================
+
 
 @pytest.mark.django_db
 class TestLogoutConfirmView:
@@ -51,6 +71,16 @@ class TestLogoutConfirmView:
         response = client.get(reverse("accounts:logout_confirm"))
 
         assert response.status_code == 200
+
+    def test_view_class(self, client):
+        response = client.get(reverse("accounts:logout_confirm"))
+
+        assert response.resolver_match.func.view_class is LogoutConfirmView
+
+
+# ============================================================
+# Password Reset
+# ============================================================
 
 
 @pytest.mark.django_db
@@ -61,6 +91,18 @@ class TestPasswordResetView:
 
         assert response.status_code == 200
         assert "form" in response.context
+
+    def test_view_class(self, client):
+        response = client.get(reverse("accounts:password_reset"))
+
+        assert (
+            response.resolver_match.func.view_class is CustomPasswordResetView
+        )
+
+
+# ============================================================
+# Password Reset Confirm
+# ============================================================
 
 
 @pytest.mark.django_db
@@ -79,6 +121,27 @@ class TestPasswordResetConfirmView:
 
         assert response.status_code == 200
 
+    def test_view_class(self, client):
+        url = reverse(
+            "accounts:password_reset_confirm",
+            kwargs={
+                "uidb64": "invalid",
+                "token": "invalid-token",
+            },
+        )
+
+        response = client.get(url)
+
+        assert (
+            response.resolver_match.func.view_class
+            is CustomPasswordResetConfirmView
+        )
+
+
+# ============================================================
+# Password Change
+# ============================================================
+
 
 @pytest.mark.django_db
 class TestPasswordChangeView:
@@ -87,6 +150,7 @@ class TestPasswordChangeView:
         response = client.get(reverse("accounts:password_change"))
 
         assert response.status_code == 302
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_authenticated(self, client, verified_user):
         client.force_login(verified_user)
@@ -94,6 +158,17 @@ class TestPasswordChangeView:
         response = client.get(reverse("accounts:password_change"))
 
         assert response.status_code == 200
+        assert "form" in response.context
+
+    def test_view_class(self, client):
+        response = client.get(reverse("accounts:password_change"))
+
+        assert response.resolver_match.func.view_class is PasswordChangeView
+
+
+# ============================================================
+# Password Change Confirm
+# ============================================================
 
 
 @pytest.mark.django_db
@@ -103,6 +178,7 @@ class TestPasswordChangeConfirmView:
         response = client.get(reverse("accounts:password_change_done"))
 
         assert response.status_code == 302
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_authenticated(self, client, verified_user):
         client.force_login(verified_user)
@@ -110,6 +186,19 @@ class TestPasswordChangeConfirmView:
         response = client.get(reverse("accounts:password_change_done"))
 
         assert response.status_code == 200
+
+    def test_view_class(self, client):
+        response = client.get(reverse("accounts:password_change_done"))
+
+        assert (
+            response.resolver_match.func.view_class
+            is PasswordChangeConfirmView
+        )
+
+
+# ============================================================
+# Profile
+# ============================================================
 
 
 @pytest.mark.django_db
@@ -124,6 +213,7 @@ class TestProfileView:
         response = client.get(url)
 
         assert response.status_code == 302
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_authenticated_owner(self, client, verified_user):
         client.force_login(verified_user)
@@ -138,7 +228,12 @@ class TestProfileView:
         assert response.status_code == 200
         assert response.context["profile"] == verified_user.profile
 
-    def test_other_user_profile(self, client, verified_user, another_user):
+    def test_other_user_profile(
+        self,
+        client,
+        verified_user,
+        another_user,
+    ):
         client.force_login(verified_user)
 
         url = reverse(
@@ -149,6 +244,23 @@ class TestProfileView:
         response = client.get(url)
 
         assert response.status_code == 404
+
+    def test_view_class(self, client, verified_user):
+        client.force_login(verified_user)
+
+        url = reverse(
+            "accounts:profile",
+            kwargs={"pk": verified_user.profile.pk},
+        )
+
+        response = client.get(url)
+
+        assert response.resolver_match.func.view_class is ProfileView
+
+
+# ============================================================
+# Profile Update
+# ============================================================
 
 
 @pytest.mark.django_db
@@ -163,6 +275,7 @@ class TestProfileUpdateView:
         response = client.get(url)
 
         assert response.status_code == 302
+        assert response.url.startswith(reverse("accounts:login"))
 
     def test_authenticated_owner(self, client, verified_user):
         client.force_login(verified_user)
@@ -175,12 +288,34 @@ class TestProfileUpdateView:
         response = client.get(url)
 
         assert response.status_code == 200
+        assert "form" in response.context
         assert response.context["form"].instance == verified_user.profile
 
-    def test_other_user_profile(self, client, verified_user, another_user):
+    def test_other_user_profile(
+        self,
+        client,
+        verified_user,
+        another_user,
+    ):
         client.force_login(verified_user)
 
         url = reverse(
             "accounts:profile_edit",
             kwargs={"pk": another_user.profile.pk},
         )
+
+        response = client.get(url)
+
+        assert response.status_code == 404
+
+    def test_view_class(self, client, verified_user):
+        client.force_login(verified_user)
+
+        url = reverse(
+            "accounts:profile_edit",
+            kwargs={"pk": verified_user.profile.pk},
+        )
+
+        response = client.get(url)
+
+        assert response.resolver_match.func.view_class is ProfileUpdateView

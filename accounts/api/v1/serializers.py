@@ -162,22 +162,9 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 class ResendActivationSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-    def validate(self, attrs):
-        try:
-            user = User.objects.get(email=attrs["email"])
-        except User.DoesNotExist:
-            raise serializers.ValidationError(
-                {"email": _("User does not exist.")}
-            )
-
-        attrs["user"] = user
-        return attrs
-
 
 class ResetPasswordEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
-
-
 
 
 class ResetPasswordSerializer(serializers.Serializer):

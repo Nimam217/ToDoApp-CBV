@@ -11,5 +11,6 @@ exclude =
     __init__.py
     __initial__.py
     accounts/migrations
-    ToDoApp/settings.py
+    ToDoApp/settings/
     accounts/apps.py
+    task/apps.py

@@ -12,18 +12,12 @@ class HelloWorldUser(HttpUser):
             },
         )
 
-
-
         if response.status_code != 200:
-            raise Exception(
-                f"Login failed: {response.status_code}"
-            )
+            raise Exception(f"Login failed: {response.status_code}")
 
         data = response.json()
 
-        self.headers = {
-            "Authorization": f"Bearer {data['access']}"
-        }
+        self.headers = {"Authorization": f"Bearer {data['access']}"}
 
     @task
     def hello_world(self):

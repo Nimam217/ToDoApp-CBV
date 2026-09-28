@@ -52,4 +52,3 @@ class TestTaskURL:
 
         assert url == f"/task/delete/{task.pk}/"
         assert resolve(url).func.view_class == TaskDeleteView
-

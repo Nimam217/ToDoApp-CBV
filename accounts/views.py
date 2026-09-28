@@ -214,5 +214,3 @@ class ActivationConfirmView(TemplateView):
             context["status"] = "invalid"
 
         return context
-
-

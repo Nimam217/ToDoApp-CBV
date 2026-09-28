@@ -1,7 +1,5 @@
 from mail_templated import EmailMessage
 
-from .threads import EmailThread
-
 
 def send_activation_email(user, token):
     message = EmailMessage(

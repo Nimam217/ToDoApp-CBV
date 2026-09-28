@@ -8,7 +8,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-
 import jwt
 
 from ...models import Profile, User
@@ -23,10 +22,7 @@ from .serializers import (
     ResetPasswordSerializer,
     TokenObtainPairViewSerializer,
 )
-from accounts.services import (
-    send_activation_email,
-    send_reset_password_email,
-)
+
 from ...tasks import send_activation_email_task, send_reset_password_email_task
 
 
@@ -146,12 +142,13 @@ class ResetPasswordEmailView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
 
-        user = User.objects.get(email=serializer.validated_data["email"])
-        if user:
+        email = serializer.validated_data["email"]
 
+        user = User.objects.filter(email=email).first()
+
+        if user:
             access = AccessToken.for_user(user)
             token = str(access)
 
@@ -167,11 +164,15 @@ class ResetPasswordEmailView(generics.GenericAPIView):
                 },
             )
 
-            return Response(
-                {"detail": "if your account exist ,"
-                           "email has been sent successfully"},
-
-            )
+        return Response(
+            {
+                "detail": (
+                    "If your account exists, "
+                    "an email has been sent successfully"
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class ResetPasswordView(generics.GenericAPIView):
@@ -262,31 +263,29 @@ class ResendActivationEmail(generics.GenericAPIView):
 
         serializer.is_valid(raise_exception=True)
 
-        user = User.objects.get(email=serializer.validated_data["email"])
+        user = User.objects.filter(
+            email=serializer.validated_data["email"]
+        ).first()
         if user and not user.is_verified:
 
             access = AccessToken.for_user(user)
             token = str(access)
 
             send_activation_email_task.apply_async(
-            args=[token, user.id],
-            expires=60,
-            retry=True,
-            retry_policy={
-                "max_retries": 3,
-                "interval_start": 1,
-                "interval_step": 2,
-                "interval_max": 10,
+                args=[token, user.id],
+                expires=60,
+                retry=True,
+                retry_policy={
+                    "max_retries": 3,
+                    "interval_start": 1,
+                    "interval_step": 2,
+                    "interval_max": 10,
+                },
+            )
+
+        return Response(
+            {
+                "detail": "If the account exists and is not verified, "
+                "an activation email has been sent.",
             },
-            )
-
-            return Response(
-                {"detail": "If the account exists and is not verified, "
-                    "an activation email has been sent.",},
-
-            )
-        else:
-            return Response(
-                {"detail":"somthing went wrong"},
-
-            )
+        )

@@ -1,5 +1,3 @@
-from django.utils import timezone
-
 from rest_framework import viewsets
 from rest_framework.response import Response
 from .paginations import DefaultPagination
@@ -11,6 +9,7 @@ from .filters import CustomFilterBackend
 from .permissions import IsOwner
 
 from django.core.cache import cache
+
 
 class TaskModelViewSet(viewsets.ModelViewSet):
     serializer_class = TaskModelSerializer
@@ -67,4 +66,3 @@ class TaskModelViewSet(viewsets.ModelViewSet):
         )
 
         return Response(serializer.data)
-

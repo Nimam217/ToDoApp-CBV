@@ -1,5 +1,3 @@
-import pytest
-
 from task.forms import TaskForm
 
 

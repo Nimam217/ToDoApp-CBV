@@ -27,9 +27,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = [
- "*"
-]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -50,7 +48,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "rest_framework_simplejwt",
     "mail_templated",
-    "django_celery_beat"
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -92,7 +90,7 @@ DATABASES = {
         "NAME": os.environ.get("POSTGRES_DB"),
         "USER": os.environ.get("POSTGRES_USER"),
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
-        "HOST": "database",
+        "HOST": os.environ.get("HOST"),
         "PORT": "5432",
     }
 }
@@ -150,7 +148,6 @@ LOGOUT_REDIRECT_URL = "/"
 # set email for develop
 
 
-
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.BasicAuthentication",
@@ -159,7 +156,6 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ]
 }
-
 
 
 CELERY_BROKER_URL = "redis://redis:6379/1"

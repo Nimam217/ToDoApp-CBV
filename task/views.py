@@ -8,7 +8,6 @@ from django.views.generic import (
     DetailView,
     TemplateView,
 )
-from rest_framework.views import APIView
 
 from task.forms import TaskForm
 from task.models import Task
@@ -17,7 +16,11 @@ from accounts.mixins import VerifiedRequiredMixin
 # Create your views here.
 
 
-class DashboardView(LoginRequiredMixin,VerifiedRequiredMixin, TemplateView,):
+class DashboardView(
+    LoginRequiredMixin,
+    VerifiedRequiredMixin,
+    TemplateView,
+):
 
     template_name = "task/dashboard.html"
 
@@ -75,9 +78,7 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     model = Task
 
     def get_queryset(self):
-        return Task.objects.filter(
-            user=self.request.user
-        )
+        return Task.objects.filter(user=self.request.user)
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
@@ -112,5 +113,3 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
         return Task.objects.select_related("user").filter(
             user=self.request.user
         )
-
-
