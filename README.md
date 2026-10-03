@@ -58,12 +58,28 @@ The project offers two interfaces on top of the same data:
 - Custom permissions per app
 - Interactive documentation with Swagger UI and ReDoc (`drf-yasg`)
 
-### UI
+* Authentication
+* Registration
+* JWT authentication
+* Account activation
+* Password management
+* Profile management
+* Task CRUD
+* Object-level permissions
+* Filtering
+* Searching
+* Ordering
+* Pagination
 
 - Bootstrap 5, responsive layout
 - Bootstrap cards and alerts together with the Django messages framework
 
----
+OpenAPI documentation is available through:
+
+```text
+/swagger/
+/redoc/
+```
 
 ## Tech Stack
 
@@ -83,7 +99,52 @@ The project offers two interfaces on top of the same data:
 | Load testing | Locust |
 | Code quality | black, flake8 |
 
----
+### Performance & Testing
+
+* Redis caching
+* Locust load testing
+
+## Architecture
+
+```text
+                         Client
+                           │
+             ┌─────────────┴─────────────┐
+             │                           │
+       Django Templates             REST API
+             │                           │
+             └─────────────┬─────────────┘
+                           │
+                        Django
+                           │
+             ┌─────────────┼─────────────┐
+             │             │             │
+         PostgreSQL      Redis        Celery
+                                       │
+                                ┌──────┴──────┐
+                                │             │
+                              Worker         Beat
+```
+
+For the production-like environment:
+
+```text
+Client
+  │
+  ▼
+Nginx
+  │
+  ▼
+Gunicorn
+  │
+  ▼
+Django
+ ├── PostgreSQL
+ ├── Redis
+ └── Celery
+      ├── Worker
+      └── Beat
+```
 
 ## Project Structure
 
@@ -258,26 +319,23 @@ Interactive documentation is generated automatically:
 | `/redoc/` | ReDoc |
 | `/swagger.json/` | Raw OpenAPI schema |
 
----
+The caching layer includes:
 
-## Environment Variables
+* Cache keys
+* TTL
+* Cache invalidation
+* User-specific data handling
+* Cache consistency after data changes
 
 Create a `.env` file in the project root:
 
-```env
-SECRET_KEY=your-secret-key
-DEBUG=1
+* Account activation
+* Password reset
+* Resending activation emails
 
-POSTGRES_DB=your_database
-POSTGRES_USER=your_user
-POSTGRES_PASSWORD=your_password
+Email operations can be processed asynchronously using Celery.
 
-DB_NAME=your_database
-DB_USER=your_user
-DB_PASSWORD=your_password
-DB_HOST=db
-DB_PORT=5432
-```
+## Testing
 
 > Never commit your `.env` file. It is already listed in `.gitignore`.
 
@@ -293,8 +351,7 @@ DB_PORT=5432
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Nimam217/ToDoApp-CBV.git
-cd ToDoApp-CBV
+pytest
 ```
 
 ### 2. Create the `.env` file
@@ -304,7 +361,7 @@ See [Environment Variables](#environment-variables).
 ### 3. Build and start the containers
 
 ```bash
-docker compose up --build
+pytest --cov=.
 ```
 
 On startup, the `web` container waits for PostgreSQL using `wait-for-it.sh`, applies migrations, and then starts the server:
