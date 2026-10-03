@@ -1,78 +1,87 @@
-# Django Task Manager
+# ToDoApp
 
-A task management web application built with Django, PostgreSQL, Docker, and Bootstrap 5.
+A full-featured task management application built with **Django 5.2**, **Django REST Framework**, **PostgreSQL**, and **Docker**.
 
-The project provides user authentication, profile management, task CRUD operations, task filtering, search, and a responsive user interface.
+The project offers two interfaces on top of the same data:
+
+- A server-rendered web UI (class-based views + Bootstrap 5)
+- A versioned REST API (`/api/v1/`) with Token and JWT authentication, filtering, pagination, and Swagger/ReDoc documentation
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Data Models](#data-models)
+- [Web Routes](#web-routes)
+- [REST API](#rest-api)
+- [API Documentation](#api-documentation)
+- [Environment Variables](#environment-variables)
+- [Getting Started](#getting-started)
+- [Running Tests](#running-tests)
+- [Load Testing](#load-testing)
+- [Code Style](#code-style)
+- [Production Deployment](#production-deployment)
+- [Useful Docker Commands](#useful-docker-commands)
 
 ---
 
 ## Features
 
-### Authentication
+### Authentication and Accounts
 
-- Custom User model based on `AbstractBaseUser`
-- Email-based authentication
-- User registration
-- Login and logout
-- Logout confirmation
-- Password change
-- Password reset via email
-- Django built-in authentication views
-- Custom authentication forms
-- Protected views using `LoginRequiredMixin`
-
-### Profile
-
-- View user profile
-- Edit personal profile
-- First name
-- Last name
-- Description
-- Profile creation date
-- Profile update date
-- Users can only edit their own profile
+- Custom `User` model based on `AbstractBaseUser` with **email as the login field**
+- Registration with **email activation** (`is_verified` flag) and resend-activation support
+- Login, logout (with confirmation page), password change, and password reset via email
+- Email templates rendered with `django-mail-templated`
+- A `Profile` is created automatically for every new user through a `post_save` signal
+- Profile page and edit page with image upload (users can only edit their own profile)
+- Background email sending (Celery tasks and threads)
 
 ### Task Management
 
-- Create tasks
-- View task details
-- Update tasks
-- Delete tasks
-- Mark tasks as completed
-- Mark tasks as pending
-- Tasks belong to their owner
-- Users can only access their own tasks
+- Create, view, update, and delete tasks
+- Mark tasks as done or pending
+- Each task belongs to its owner, and users can only access their own tasks
+- Dashboard with pending/completed separation, status filter, title search, and task counters
+- Management commands in `task/management/commands`
 
-### Dashboard
+### REST API
 
-- Display user's tasks
-- Separate pending and completed tasks
-- Filter tasks by status
-- Search tasks by title
-- Display total task count
-- Display pending task count
-- Display completed task count
+- Versioned endpoints under `api/v1/` for both `accounts` and `task`
+- Token authentication and JWT authentication (create, refresh, verify)
+- Task CRUD through a `ModelViewSet`
+- Filtering by creation date range and completion status (`django-filter`)
+- Custom pagination
+- Custom permissions per app
+- Interactive documentation with Swagger UI and ReDoc (`drf-yasg`)
 
 ### UI
 
-- Bootstrap 5
-- Responsive design
-- Bootstrap cards
-- Bootstrap alerts
-- Django messages
-- Responsive navigation
-- Clean dashboard interface
+- Bootstrap 5, responsive layout
+- Bootstrap cards and alerts together with the Django messages framework
 
 ---
 
 ## Tech Stack
 
-- Python
-- Django 5.2
-- PostgreSQL 15
-- Bootstrap 5
-- Docker
-- Docker Compose
+| Area | Technology |
+|------|------------|
+| Language | Python 3.11 |
+| Framework | Django 5.2, Django REST Framework |
+| Database | PostgreSQL 15 (SQLite file is included for quick local experiments) |
+| Auth | Django auth, DRF Token auth, `djangorestframework-simplejwt` |
+| API docs | `drf-yasg` (Swagger / ReDoc) |
+| Filtering | `django-filter` |
+| Background jobs | Celery |
+| Email (dev) | smtp4dev |
+| Web server (prod) | Gunicorn + Nginx |
+| Containers | Docker, Docker Compose |
+| Testing | pytest |
+| Load testing | Locust |
+| Code quality | black, flake8 |
 
 ---
 
@@ -80,212 +89,180 @@ The project provides user authentication, profile management, task CRUD operatio
 
 ```text
 .
-├── accounts
-│   ├── admin.py
-│   ├── apps.py
+├── accounts                 # Users, profiles, authentication
+│   ├── api/v1               # Accounts REST API
+│   ├── tests                # test_accounts_api, test_accounts_render
+│   ├── models.py            # User, Profile
 │   ├── forms.py
-│   ├── __init__.py
-│   ├── migrations
-│   │   ├── 0001_initial.py
-│   │   ├── 0002_user_image.py
-│   │   ├── 0003_alter_user_image.py
-│   │   ├── 0004_alter_profile_user.py
-│   │   ├── 0005_remove_user_image_profile_image.py
-│   │   └── __init__.py
-│   ├── models.py
+│   ├── mixins.py
+│   ├── services.py
+│   ├── signals.py           # Auto-create Profile
+│   ├── tasks.py             # Celery tasks
+│   ├── threads.py
+│   ├── urls.py
+│   └── views.py
+├── core                     # Home page and load testing
+│   ├── locust/locustfile.py
+│   ├── tsets                # Render tests for core
+│   ├── urls.py
+│   └── views.py
+├── task                     # Task management
+│   ├── api/v1               # Task REST API
+│   ├── management/commands  # Custom management commands
+│   ├── tests                # test_task_api, test_task_render
+│   ├── models.py            # Task
+│   ├── forms.py
 │   ├── signals.py
-│   ├── tests.py
 │   ├── urls.py
 │   └── views.py
-│
-├── core
-│   ├── admin.py
-│   ├── apps.py
-│   ├── __init__.py
-│   ├── migrations
-│   │   └── __init__.py
-│   ├── models.py
-│   ├── tests.py
+├── templates                # accounts, core, email, registration, task
+├── ToDoApp                  # Project configuration
+│   ├── settings
+│   │   ├── base.py
+│   │   ├── development.py
+│   │   └── production.py
+│   ├── celery.py
 │   ├── urls.py
-│   └── views.py
-│
-├── docker-compose.yml
-├── Dockerfile
-├── manage.py
-├── README.md
-├── requirements.txt
-│
-├── task
-│   ├── admin.py
-│   ├── apps.py
-│   ├── forms.py
-│   ├── __init__.py
-│   ├── migrations
-│   │   ├── 0001_initial.py
-│   │   └── __init__.py
-│   ├── models.py
-│   ├── tests.py
-│   ├── urls.py
-│   └── views.py
-│
-├── templates
-│   ├── accounts
-│   │   ├── profile_edit.html
-│   │   └── profile.html
-│   ├── base.html
-│   ├── core
-│   │   └── home.html
-│   ├── registration
-│   │   ├── logged_out.html
-│   │   ├── login.html
-│   │   ├── password_change_done.html
-│   │   ├── password_change.html
-│   │   ├── password_reset_complete.html
-│   │   ├── password_reset_confirm.html
-│   │   ├── password_reset_done.html
-│   │   ├── password_reset_email.html
-│   │   ├── password_reset.html
-│   │   └── register.html
-│   └── task
-│       ├── create.html
-│       ├── dashboard.html
-│       ├── delete.html
-│       ├── detail.html
-│       └── update.html
-│
-├── ToDoApp
 │   ├── asgi.py
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
 │   └── wsgi.py
-│
-└── wait-for-it.sh
+├── nginx/nginx.conf
+├── conftest.py
+├── pytest.ini
+├── Dockerfile
+├── docker-compose.yml       # Development stack
+├── docker-compose.prod.yml  # Production stack
+├── wait-for-it.sh
+├── requirements.txt
+└── manage.py
 ```
 
 ---
 
-## Docker
+## Data Models
 
-The project uses Docker Compose to run Django and PostgreSQL.
+### User
 
-### Services
+| Field | Type | Notes |
+|-------|------|-------|
+| `email` | EmailField | Unique, used as `USERNAME_FIELD` |
+| `is_active` | Boolean | Default `True` |
+| `is_verified` | Boolean | Default `False`, set after email activation |
+| `is_staff`, `is_superuser` | Boolean | Standard Django flags |
+| `date_joined`, `date_updated` | DateTime | Automatic |
 
-The application consists of two services:
+### Profile
 
-- `web` — Django application
-- `db` — PostgreSQL database
+One-to-one with `User` (`related_name="profile"`).
 
-PostgreSQL uses a Docker named volume to persist database data.
+| Field | Type |
+|-------|------|
+| `first_name`, `last_name` | CharField (max 50) |
+| `image` | ImageField (`upload_to="images"`, optional) |
+| `description` | TextField (optional) |
+| `date_joined`, `date_updated` | DateTime |
 
-```yaml
-volumes:
-  postgres_data:
-```
+### Task
 
-### Web Service
-
-The Django application is built using the project's `Dockerfile`.
-
-The project directory is mounted into the container:
-
-```yaml
-volumes:
-  - .:/app
-```
-
-The Django development server runs on:
-
-```text
-0.0.0.0:8000
-```
-
-Docker maps port `8000` inside the container to port `80` on the host:
-
-```yaml
-ports:
-  - "80:8000"
-```
-
-The application can therefore be accessed at:
-
-```text
-http://127.0.0.1
-```
+| Field | Type | Notes |
+|-------|------|-------|
+| `title` | CharField (max 100) | |
+| `description` | TextField | |
+| `user` | ForeignKey to `User` | Owner, cascade delete |
+| `done` | Boolean | Default `False` |
+| `created_at`, `updated_at` | DateTime | Automatic |
 
 ---
 
-## Database Startup
+## Web Routes
 
-The project uses `wait-for-it.sh` to wait until PostgreSQL is available before starting Django.
+| URL | Description |
+|-----|-------------|
+| `/` | Home page |
+| `/accounts/register/` | Registration |
+| `/accounts/login/` | Login |
+| `/accounts/logout_confirm/` | Logout confirmation |
+| `/accounts/password_change/` | Change password |
+| `/accounts/password_reset/` | Reset password by email |
+| `/accounts/profile/<id>/` | View profile |
+| `/accounts/profile/<id>/edit/` | Edit profile |
+| `/task/dashboard/` | Task dashboard |
+| `/task/create/` | Create task |
+| `/task/detail/<id>/` | Task details |
+| `/task/update/<id>/` | Update task |
+| `/task/delete/<id>/` | Delete task |
+| `/admin/` | Django admin |
 
-The startup process is:
+---
 
-```text
-Docker Compose
-      ↓
-PostgreSQL starts
-      ↓
-wait-for-it.sh
-      ↓
-Wait for db:5432
-      ↓
-Django migrations
-      ↓
-Django development server
-```
+## REST API
 
-The web container runs the following startup command:
+### Accounts: `/accounts/api/v1/`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `registration/` | Register a new user (sends activation email) |
+| GET | `activation/confirm/<token>/` | Activate account |
+| POST | `activation/resend/` | Resend activation email |
+| POST | `token-auth/create/` | Obtain an auth token |
+| POST | `token-auth/discard/` | Discard the auth token |
+| POST | `jwt/create/` | Obtain JWT access and refresh tokens |
+| POST | `jwt/refresh/` | Refresh the access token |
+| POST | `jwt/verify/` | Verify a token |
+| GET, PUT, PATCH | `profile/` | Retrieve or update the current user's profile |
+| PUT | `change_password/` | Change password |
+| POST | `reset_password/` | Request a password reset email |
+| POST | `reset_password/confirm/<token>/` | Set a new password |
+
+### Tasks: `/task/api/v1/`
+
+Registered through a DRF router:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `my-task/` | List the current user's tasks (paginated) |
+| POST | `my-task/` | Create a task |
+| GET | `my-task/<id>/` | Retrieve a task |
+| PUT, PATCH | `my-task/<id>/` | Update a task |
+| DELETE | `my-task/<id>/` | Delete a task |
+
+**Query parameters for `GET my-task/`:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `is_done` | Filter by completion status (`true` / `false`) |
+| `from_this_date` | Tasks created on or after this datetime |
+| `to_this_date` | Tasks created on or before this datetime |
+
+### Authentication example
 
 ```bash
-./wait-for-it.sh db:5432 --timeout=60 -- \
-python manage.py migrate && \
-python manage.py runserver 0.0.0.0:8000
+# Get a JWT
+curl -X POST http://127.0.0.1/accounts/api/v1/jwt/create/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "your-password"}'
+
+# Use it
+curl http://127.0.0.1/task/api/v1/my-task/?is_done=false \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ---
 
-## Docker Compose Configuration
+## API Documentation
 
-The project uses the following Docker Compose structure:
+Interactive documentation is generated automatically:
 
-```yaml
-services:
-  db:
-    image: postgres:15
-    env_file:
-      - .env
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  web:
-    build: .
-    command: >
-      sh -c "
-        ./wait-for-it.sh db:5432 --timeout=60 --
-        python manage.py migrate &&
-        python manage.py runserver 0.0.0.0:8000
-      "
-    volumes:
-      - .:/app
-    ports:
-      - "80:8000"
-    depends_on:
-      - db
-    env_file:
-      - .env
-
-volumes:
-  postgres_data:
-```
+| URL | Description |
+|-----|-------------|
+| `/swagger/` | Swagger UI |
+| `/redoc/` | ReDoc |
+| `/swagger.json/` | Raw OpenAPI schema |
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file in the root directory.
-
-Example:
+Create a `.env` file in the project root:
 
 ```env
 SECRET_KEY=your-secret-key
@@ -302,17 +279,16 @@ DB_HOST=db
 DB_PORT=5432
 ```
 
-Do not commit your `.env` file to Git.
-
-Add it to `.gitignore`:
-
-```gitignore
-.env
-```
+> Never commit your `.env` file. It is already listed in `.gitignore`.
 
 ---
 
 ## Getting Started
+
+### Prerequisites
+
+- Docker
+- Docker Compose
 
 ### 1. Clone the repository
 
@@ -323,7 +299,7 @@ cd ToDoApp-CBV
 
 ### 2. Create the `.env` file
 
-Create a `.env` file in the project root and configure the required Django and PostgreSQL environment variables.
+See [Environment Variables](#environment-variables).
 
 ### 3. Build and start the containers
 
@@ -331,182 +307,121 @@ Create a `.env` file in the project root and configure the required Django and P
 docker compose up --build
 ```
 
-Or run the containers in detached mode:
+On startup, the `web` container waits for PostgreSQL using `wait-for-it.sh`, applies migrations, and then starts the server:
 
-```bash
-docker compose up -d --build
+```text
+PostgreSQL starts -> wait-for-it.sh (db:5432) -> migrate -> web server
 ```
 
 ### 4. Open the application
 
-Visit:
+| Service | URL |
+|---------|-----|
+| Web application | http://127.0.0.1 |
+| Swagger UI | http://127.0.0.1/swagger/ |
+| smtp4dev (catches outgoing emails) | http://127.0.0.1:5000 |
 
-```text
-http://127.0.0.1
-```
-
----
-
-## Useful Docker Commands
-
-### Start the application
-
-```bash
-docker compose up
-```
-
-### Build and start
-
-```bash
-docker compose up --build
-```
-
-### Run in background
-
-```bash
-docker compose up -d
-```
-
-### Stop containers
-
-```bash
-docker compose down
-```
-
-### View running containers
-
-```bash
-docker compose ps
-```
-
-### View all logs
-
-```bash
-docker compose logs
-```
-
-### View Django logs
-
-```bash
-docker compose logs web
-```
-
-### View PostgreSQL logs
-
-```bash
-docker compose logs db
-```
-
-### Open a shell inside the Django container
-
-```bash
-docker compose exec web sh
-```
-
-### Create migrations
-
-```bash
-docker compose exec web python manage.py makemigrations
-```
-
-### Apply migrations
-
-```bash
-docker compose exec web python manage.py migrate
-```
-
-### Create a superuser
+### 5. Create a superuser
 
 ```bash
 docker compose exec web python manage.py createsuperuser
 ```
 
+### Development services
+
+| Service | Purpose |
+|---------|---------|
+| `web` | Django application (port 80 on the host maps to 8000 in the container) |
+| `db` | PostgreSQL 15 with the `postgres_data` named volume |
+| `smtp4dev` | Fake SMTP server for activation and password reset emails |
+
+Registration and password reset emails are not delivered to real inboxes in development. Open the smtp4dev web interface to read them and click the activation links.
+
 ---
 
-## Migrations
+## Running Tests
 
-When models are changed, create new migration files:
+The project uses **pytest** (see `pytest.ini` and `conftest.py`). Tests live inside each app:
+
+- `accounts/tests/test_accounts_api`, `accounts/tests/test_accounts_render`
+- `task/tests/test_task_api`, `task/tests/test_task_render`
+- `core/tsets/test_core_render`
+
+Run them inside the container:
 
 ```bash
+docker compose exec web pytest
+```
+
+Run a single app or file:
+
+```bash
+docker compose exec web pytest task/
+docker compose exec web pytest accounts/tests/test_accounts_api -v
+```
+
+---
+
+## Load Testing
+
+A Locust scenario is provided in `core/locust/locustfile.py`:
+
+```bash
+locust -f core/locust/locustfile.py --host http://127.0.0.1
+```
+
+Then open http://localhost:8089 to start the test.
+
+---
+
+## Code Style
+
+The project is formatted with **black** and linted with **flake8** (configuration in `.flake8`):
+
+```bash
+black .
+flake8
+```
+
+---
+
+## Production Deployment
+
+The production stack is defined in `docker-compose.prod.yml` and uses:
+
+- Django with the `ToDoApp.settings.production` settings module
+- Gunicorn as the application server
+- Nginx as the reverse proxy (`nginx/nginx.conf`)
+- PostgreSQL with a persistent volume
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Before deploying, make sure that:
+
+- `DEBUG` is disabled
+- `SECRET_KEY` is a strong, private value
+- `ALLOWED_HOSTS` contains your domain
+- The `.env` file contains production credentials
+
+---
+
+## Useful Docker Commands
+
+```bash
+docker compose up -d --build        # Build and run in the background
+docker compose down                 # Stop containers
+docker compose ps                   # List running containers
+docker compose logs -f web          # Follow Django logs
+docker compose logs db              # PostgreSQL logs
+docker compose exec web sh          # Shell inside the Django container
+docker compose exec web python manage.py migrate
 docker compose exec web python manage.py makemigrations
 ```
 
-Then apply them:
-
-```bash
-docker compose exec web python manage.py migrate
-```
-
-The Docker startup command automatically runs:
-
-```bash
-python manage.py migrate
-```
-
-Migration files should be committed to Git.
-
 ---
 
-## Django Messages
+## Author
 
-The project uses Django's messages framework to provide feedback to users.
-
-For example:
-
-```python
-from django.contrib import messages
-
-messages.success(
-    self.request,
-    "Task created successfully."
-)
-```
-
-Messages are displayed as Bootstrap alerts in the base template.
-
----
-
-## Query Optimization
-
-The project uses `select_related()` for the relationship between `Task` and `User`.
-
-Example:
-
-```python
-Task.objects.select_related("user").filter(
-    user=self.request.user
-)
-```
-
-This helps reduce unnecessary database queries when accessing related user information.
-
----
-
-## Security
-
-Task views use `LoginRequiredMixin` and restrict querysets to the currently authenticated user.
-
-Example:
-
-```python
-def get_queryset(self):
-    return Task.objects.select_related("user").filter(
-        user=self.request.user
-    )
-```
-
-This prevents users from accessing, editing, or deleting tasks belonging to other users.
-
----
-
-## Development Note
-
-The frontend/UI was developed with assistance from ChatGPT.
-
-The Django backend, application logic, authentication system, database models, views, forms, and project structure were implemented by me.
-
----
-
-## License
-
-This project is licensed under the MIT License.
+**Nima** — [GitHub: Nimam217](https://github.com/Nimam217)
