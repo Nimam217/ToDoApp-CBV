@@ -1,59 +1,62 @@
 # ToDoApp
 
-A full-stack task management application built with **Django** and **Django REST Framework**.
+A full-featured task management application built with **Django 5.2**, **Django REST Framework**, **PostgreSQL**, and **Docker**.
 
-The project provides both a **server-rendered web interface** and a **versioned REST API**, with authentication, authorization, asynchronous tasks, caching, testing, and Docker-based deployment support.
+The project offers two interfaces on top of the same data:
+
+- A server-rendered web UI (class-based views + Bootstrap 5)
+- A versioned REST API (`/api/v1/`) with Token and JWT authentication, filtering, pagination, and Swagger/ReDoc documentation
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Data Models](#data-models)
+- [Web Routes](#web-routes)
+- [REST API](#rest-api)
+- [API Documentation](#api-documentation)
+- [Environment Variables](#environment-variables)
+- [Getting Started](#getting-started)
+- [Running Tests](#running-tests)
+- [Load Testing](#load-testing)
+- [Code Style](#code-style)
+- [Production Deployment](#production-deployment)
+- [Useful Docker Commands](#useful-docker-commands)
+
+---
 
 ## Features
 
-### Authentication & Account Management
+### Authentication and Accounts
 
-* Custom User model with email-based authentication
-* User registration
-* Email activation / verification
-* Login and logout
-* JWT authentication
-* Refresh and verify tokens
-* Password change
-* Password reset via email
-* Resend activation email
-* User profile management
-* Verified-user restrictions
-* Authentication and permission handling
+- Custom `User` model based on `AbstractBaseUser` with **email as the login field**
+- Registration with **email activation** (`is_verified` flag) and resend-activation support
+- Login, logout (with confirmation page), password change, and password reset via email
+- Email templates rendered with `django-mail-templated`
+- A `Profile` is created automatically for every new user through a `post_save` signal
+- Profile page and edit page with image upload (users can only edit their own profile)
+- Background email sending (Celery tasks and threads)
 
 ### Task Management
 
-* Create, update and delete tasks
-* View task details
-* Mark tasks as completed or pending
-* User-owned tasks
-* Object-level ownership permissions
-* Search tasks by title and description
-* Filter tasks by status
-* Order tasks
-* Paginate API results
+- Create, view, update, and delete tasks
+- Mark tasks as done or pending
+- Each task belongs to its owner, and users can only access their own tasks
+- Dashboard with pending/completed separation, status filter, title search, and task counters
+- Management commands in `task/management/commands`
 
-### Dashboard
+### REST API
 
-The project also includes a server-rendered Django interface for managing tasks.
-
-* Task dashboard
-* Task statistics
-* Search
-* Status filtering
-* Create / update / delete tasks
-* Task detail pages
-* User profile management
-
-## REST API
-
-The application provides a versioned REST API using **Django REST Framework**.
-
-```text
-/api/v1/
-```
-
-The API includes:
+- Versioned endpoints under `api/v1/` for both `accounts` and `task`
+- Token authentication and JWT authentication (create, refresh, verify)
+- Task CRUD through a `ModelViewSet`
+- Filtering by creation date range and completion status (`django-filter`)
+- Custom pagination
+- Custom permissions per app
+- Interactive documentation with Swagger UI and ReDoc (`drf-yasg`)
 
 * Authentication
 * Registration
@@ -68,7 +71,8 @@ The API includes:
 * Ordering
 * Pagination
 
-### API Documentation
+- Bootstrap 5, responsive layout
+- Bootstrap cards and alerts together with the Django messages framework
 
 OpenAPI documentation is available through:
 
@@ -79,37 +83,21 @@ OpenAPI documentation is available through:
 
 ## Tech Stack
 
-### Backend
-
-* Python
-* Django
-* Django REST Framework
-* Django Filter
-* Simple JWT
-
-### Database
-
-* PostgreSQL
-
-### Asynchronous Processing
-
-* Redis
-* Celery
-* Celery Beat
-
-### Testing
-
-* pytest
-* pytest-django
-* Coverage
-* Django / DRF testing utilities
-
-### Deployment
-
-* Docker
-* Docker Compose
-* Nginx
-* Gunicorn
+| Area | Technology |
+|------|------------|
+| Language | Python 3.11 |
+| Framework | Django 5.2, Django REST Framework |
+| Database | PostgreSQL 15 (SQLite file is included for quick local experiments) |
+| Auth | Django auth, DRF Token auth, `djangorestframework-simplejwt` |
+| API docs | `drf-yasg` (Swagger / ReDoc) |
+| Filtering | `django-filter` |
+| Background jobs | Celery |
+| Email (dev) | smtp4dev |
+| Web server (prod) | Gunicorn + Nginx |
+| Containers | Docker, Docker Compose |
+| Testing | pytest |
+| Load testing | Locust |
+| Code quality | black, flake8 |
 
 ### Performance & Testing
 
@@ -162,138 +150,174 @@ Django
 
 ```text
 .
-├── accounts
-│   ├── api
-│   │   └── v1
-│   ├── migrations
-│   ├── tests
-│   │   ├── test_accounts_api
-│   │   └── test_accounts_render
-│   ├── admin.py
+├── accounts                 # Users, profiles, authentication
+│   ├── api/v1               # Accounts REST API
+│   ├── tests                # test_accounts_api, test_accounts_render
+│   ├── models.py            # User, Profile
 │   ├── forms.py
 │   ├── mixins.py
-│   ├── models.py
 │   ├── services.py
-│   ├── signals.py
-│   ├── tasks.py
+│   ├── signals.py           # Auto-create Profile
+│   ├── tasks.py             # Celery tasks
 │   ├── threads.py
 │   ├── urls.py
 │   └── views.py
-│
-├── task
-│   ├── api
-│   │   └── v1
-│   ├── management
-│   │   └── commands
-│   ├── migrations
-│   ├── tests
-│   │   ├── test_task_api
-│   │   └── test_task_render
-│   ├── admin.py
+├── core                     # Home page and load testing
+│   ├── locust/locustfile.py
+│   ├── tsets                # Render tests for core
+│   ├── urls.py
+│   └── views.py
+├── task                     # Task management
+│   ├── api/v1               # Task REST API
+│   ├── management/commands  # Custom management commands
+│   ├── tests                # test_task_api, test_task_render
+│   ├── models.py            # Task
 │   ├── forms.py
-│   ├── models.py
+│   ├── signals.py
 │   ├── urls.py
 │   └── views.py
-│
-├── core
-│   ├── locust
-│   │   └── locustfile.py
-│   ├── models.py
-│   ├── urls.py
-│   └── views.py
-│
-├── templates
-│   ├── accounts
-│   ├── email
-│   ├── registration
-│   ├── task
-│   └── base.html
-│
-├── ToDoApp
+├── templates                # accounts, core, email, registration, task
+├── ToDoApp                  # Project configuration
 │   ├── settings
 │   │   ├── base.py
 │   │   ├── development.py
 │   │   └── production.py
-│   ├── asgi.py
 │   ├── celery.py
 │   ├── urls.py
+│   ├── asgi.py
 │   └── wsgi.py
-│
-├── nginx
-│   └── nginx.conf
-│
-├── Dockerfile
-├── docker-compose.yml
-├── docker-compose.prod.yml
+├── nginx/nginx.conf
 ├── conftest.py
 ├── pytest.ini
+├── Dockerfile
+├── docker-compose.yml       # Development stack
+├── docker-compose.prod.yml  # Production stack
+├── wait-for-it.sh
 ├── requirements.txt
-├── manage.py
-└── wait-for-it.sh
+└── manage.py
 ```
 
-## Authentication
+---
 
-The API uses JWT-based authentication for protected endpoints.
+## Data Models
 
-Authentication-related functionality includes:
+### User
 
-```text
-Registration
-Email Activation
-Login
-JWT Access Token
-JWT Refresh Token
-Password Change
-Password Reset
-Logout / Token Management
+| Field | Type | Notes |
+|-------|------|-------|
+| `email` | EmailField | Unique, used as `USERNAME_FIELD` |
+| `is_active` | Boolean | Default `True` |
+| `is_verified` | Boolean | Default `False`, set after email activation |
+| `is_staff`, `is_superuser` | Boolean | Standard Django flags |
+| `date_joined`, `date_updated` | DateTime | Automatic |
+
+### Profile
+
+One-to-one with `User` (`related_name="profile"`).
+
+| Field | Type |
+|-------|------|
+| `first_name`, `last_name` | CharField (max 50) |
+| `image` | ImageField (`upload_to="images"`, optional) |
+| `description` | TextField (optional) |
+| `date_joined`, `date_updated` | DateTime |
+
+### Task
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `title` | CharField (max 100) | |
+| `description` | TextField | |
+| `user` | ForeignKey to `User` | Owner, cascade delete |
+| `done` | Boolean | Default `False` |
+| `created_at`, `updated_at` | DateTime | Automatic |
+
+---
+
+## Web Routes
+
+| URL | Description |
+|-----|-------------|
+| `/` | Home page |
+| `/accounts/register/` | Registration |
+| `/accounts/login/` | Login |
+| `/accounts/logout_confirm/` | Logout confirmation |
+| `/accounts/password_change/` | Change password |
+| `/accounts/password_reset/` | Reset password by email |
+| `/accounts/profile/<id>/` | View profile |
+| `/accounts/profile/<id>/edit/` | Edit profile |
+| `/task/dashboard/` | Task dashboard |
+| `/task/create/` | Create task |
+| `/task/detail/<id>/` | Task details |
+| `/task/update/<id>/` | Update task |
+| `/task/delete/<id>/` | Delete task |
+| `/admin/` | Django admin |
+
+---
+
+## REST API
+
+### Accounts: `/accounts/api/v1/`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `registration/` | Register a new user (sends activation email) |
+| GET | `activation/confirm/<token>/` | Activate account |
+| POST | `activation/resend/` | Resend activation email |
+| POST | `token-auth/create/` | Obtain an auth token |
+| POST | `token-auth/discard/` | Discard the auth token |
+| POST | `jwt/create/` | Obtain JWT access and refresh tokens |
+| POST | `jwt/refresh/` | Refresh the access token |
+| POST | `jwt/verify/` | Verify a token |
+| GET, PUT, PATCH | `profile/` | Retrieve or update the current user's profile |
+| PUT | `change_password/` | Change password |
+| POST | `reset_password/` | Request a password reset email |
+| POST | `reset_password/confirm/<token>/` | Set a new password |
+
+### Tasks: `/task/api/v1/`
+
+Registered through a DRF router:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `my-task/` | List the current user's tasks (paginated) |
+| POST | `my-task/` | Create a task |
+| GET | `my-task/<id>/` | Retrieve a task |
+| PUT, PATCH | `my-task/<id>/` | Update a task |
+| DELETE | `my-task/<id>/` | Delete a task |
+
+**Query parameters for `GET my-task/`:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `is_done` | Filter by completion status (`true` / `false`) |
+| `from_this_date` | Tasks created on or after this datetime |
+| `to_this_date` | Tasks created on or before this datetime |
+
+### Authentication example
+
+```bash
+# Get a JWT
+curl -X POST http://127.0.0.1/accounts/api/v1/jwt/create/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "your-password"}'
+
+# Use it
+curl http://127.0.0.1/task/api/v1/my-task/?is_done=false \
+  -H "Authorization: Bearer <access_token>"
 ```
 
-Users must verify their account before accessing protected functionality that requires verification.
+---
 
-## Authorization
+## API Documentation
 
-Tasks are associated with their owner.
+Interactive documentation is generated automatically:
 
-Users can only access and modify their own tasks.
-
-Authorization is enforced through both queryset filtering and object-level permission checks.
-
-```text
-Authenticated User
-        │
-        ▼
-      Task
-        │
-        ▼
-    Is Owner?
-      /   \
-    Yes    No
-     │      │
-   Allow   Deny
-```
-
-## Redis & Celery
-
-Redis is used for caching and as infrastructure for asynchronous task processing.
-
-Celery handles background operations such as email-related tasks and scheduled jobs.
-
-```text
-Django
-  │
-  ├── Redis
-  │
-  └── Celery
-       ├── Worker
-       └── Beat
-```
-
-This allows background operations to run independently from HTTP requests.
-
-## Caching
-
-Redis-based caching is used to improve application performance.
+| URL | Description |
+|-----|-------------|
+| `/swagger/` | Swagger UI |
+| `/redoc/` | ReDoc |
+| `/swagger.json/` | Raw OpenAPI schema |
 
 The caching layer includes:
 
@@ -303,9 +327,7 @@ The caching layer includes:
 * User-specific data handling
 * Cache consistency after data changes
 
-## Email
-
-Email functionality is used for account-related workflows:
+Create a `.env` file in the project root:
 
 * Account activation
 * Password reset
@@ -315,147 +337,148 @@ Email operations can be processed asynchronously using Celery.
 
 ## Testing
 
-Tests are organized by application and separated between API and server-rendered functionality.
+> Never commit your `.env` file. It is already listed in `.gitignore`.
 
-```text
-accounts/
-└── tests/
-    ├── test_accounts_api/
-    └── test_accounts_render/
+---
 
-task/
-└── tests/
-    ├── test_task_api/
-    └── test_task_render/
-```
+## Getting Started
 
-Run the test suite:
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### 1. Clone the repository
 
 ```bash
 pytest
 ```
 
-Run tests with coverage:
+### 2. Create the `.env` file
+
+See [Environment Variables](#environment-variables).
+
+### 3. Build and start the containers
 
 ```bash
 pytest --cov=.
 ```
 
-## Load Testing
-
-Locust is included for load-testing experiments.
-
-The Locust configuration is located at:
+On startup, the `web` container waits for PostgreSQL using `wait-for-it.sh`, applies migrations, and then starts the server:
 
 ```text
-core/locust/locustfile.py
+PostgreSQL starts -> wait-for-it.sh (db:5432) -> migrate -> web server
 ```
 
-## Docker
+### 4. Open the application
 
-The project includes separate Docker Compose configurations for development and production-like environments.
+| Service | URL |
+|---------|-----|
+| Web application | http://127.0.0.1 |
+| Swagger UI | http://127.0.0.1/swagger/ |
+| smtp4dev (catches outgoing emails) | http://127.0.0.1:5000 |
 
-### Development
+### 5. Create a superuser
 
 ```bash
-docker compose up --build
+docker compose exec web python manage.py createsuperuser
 ```
 
-### Detached mode
+### Development services
+
+| Service | Purpose |
+|---------|---------|
+| `web` | Django application (port 80 on the host maps to 8000 in the container) |
+| `db` | PostgreSQL 15 with the `postgres_data` named volume |
+| `smtp4dev` | Fake SMTP server for activation and password reset emails |
+
+Registration and password reset emails are not delivered to real inboxes in development. Open the smtp4dev web interface to read them and click the activation links.
+
+---
+
+## Running Tests
+
+The project uses **pytest** (see `pytest.ini` and `conftest.py`). Tests live inside each app:
+
+- `accounts/tests/test_accounts_api`, `accounts/tests/test_accounts_render`
+- `task/tests/test_task_api`, `task/tests/test_task_render`
+- `core/tsets/test_core_render`
+
+Run them inside the container:
 
 ```bash
-docker compose up -d --build
+docker compose exec web pytest
 ```
 
-### Production-like environment
+Run a single app or file:
 
 ```bash
-docker compose -f docker-compose.prod.yml up --build
+docker compose exec web pytest task/
+docker compose exec web pytest accounts/tests/test_accounts_api -v
 ```
 
-## Environment Variables
+---
 
-Sensitive configuration is provided through environment variables.
+## Load Testing
 
-Example:
-
-```env
-SECRET_KEY=your-secret-key
-DEBUG=1
-
-POSTGRES_DB=your_database
-POSTGRES_USER=your_user
-POSTGRES_PASSWORD=your_password
-```
-
-**Never commit real secrets, passwords, tokens, or production credentials to the repository.**
-
-## Useful Commands
-
-### Run migrations
+A Locust scenario is provided in `core/locust/locustfile.py`:
 
 ```bash
-python manage.py migrate
+locust -f core/locust/locustfile.py --host http://127.0.0.1
 ```
 
-### Create migrations
+Then open http://localhost:8089 to start the test.
+
+---
+
+## Code Style
+
+The project is formatted with **black** and linted with **flake8** (configuration in `.flake8`):
 
 ```bash
-python manage.py makemigrations
+black .
+flake8
 ```
 
-### Create superuser
+---
+
+## Production Deployment
+
+The production stack is defined in `docker-compose.prod.yml` and uses:
+
+- Django with the `ToDoApp.settings.production` settings module
+- Gunicorn as the application server
+- Nginx as the reverse proxy (`nginx/nginx.conf`)
+- PostgreSQL with a persistent volume
 
 ```bash
-python manage.py createsuperuser
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-### Run tests
+Before deploying, make sure that:
+
+- `DEBUG` is disabled
+- `SECRET_KEY` is a strong, private value
+- `ALLOWED_HOSTS` contains your domain
+- The `.env` file contains production credentials
+
+---
+
+## Useful Docker Commands
 
 ```bash
-pytest
+docker compose up -d --build        # Build and run in the background
+docker compose down                 # Stop containers
+docker compose ps                   # List running containers
+docker compose logs -f web          # Follow Django logs
+docker compose logs db              # PostgreSQL logs
+docker compose exec web sh          # Shell inside the Django container
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py makemigrations
 ```
 
-### Run development server
+---
 
-```bash
-python manage.py runserver
-```
+## Author
 
-## Production Stack
-
-The production-like setup uses:
-
-* Nginx as reverse proxy
-* Gunicorn as the WSGI application server
-* Django as the application layer
-* PostgreSQL as the database
-* Redis for caching and task infrastructure
-* Celery Worker for background tasks
-* Celery Beat for scheduled tasks
-
-## Learning Goals
-
-This project was built to practice real-world backend development concepts, including:
-
-* Django architecture
-* Custom User models
-* Authentication and authorization
-* Django ORM
-* Django REST Framework
-* JWT authentication
-* Object-level permissions
-* API filtering, searching and ordering
-* Pagination
-* Email workflows
-* Redis
-* Celery
-* Caching
-* PostgreSQL
-* Docker and Docker Compose
-* Nginx and Gunicorn
-* Automated testing
-* API documentation
-* Load testing
-
-The project intentionally provides both **server-rendered Django views** and a **REST API** over the same backend.
+**Nima** — [GitHub: Nimam217](https://github.com/Nimam217)
